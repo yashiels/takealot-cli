@@ -1,0 +1,38 @@
+{
+  "name": "takealot-cli",
+  "version": "0.1.0",
+  "description": "Command-line tool for Takealot.com — search, cart, pure-API checkout, and order history.",
+  "type": "module",
+  "bin": {
+    "takealot": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "start": "node dist/cli.js",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "takealot",
+    "cli",
+    "shopping",
+    "south-africa"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}
