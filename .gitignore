@@ -1,0 +1,4 @@
+.worktrees/
+reference/
+node_modules/
+dist/
