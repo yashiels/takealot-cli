@@ -1,6 +1,6 @@
 {
   "name": "takealot-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Command-line tool for Takealot.com — search, cart, pure-API checkout, and order history.",
   "type": "module",
   "bin": {
