@@ -17,6 +17,8 @@
     "build": "tsc",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "fmt": "prettier --write .",
     "clean": "rm -rf dist",
     "start": "node dist/cli.js",
     "prepublishOnly": "npm run clean && npm run build"
@@ -33,6 +35,8 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
-    "typescript": "^5.7.0"
+    "prettier": "^3.8.4",
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.8"
   }
 }

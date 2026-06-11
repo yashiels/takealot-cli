@@ -5,6 +5,8 @@ All notable changes to takealot-cli are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [0.1.0] — 2026-06-08
 
 ### Added
@@ -31,4 +33,5 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Automatic token refresh with credential persistence
 - Standalone binary distribution via Homebrew tap (`yashiels/tap/takealot`) and GitHub Releases
 
+[Unreleased]: https://github.com/yashiels/takealot-cli/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/yashiels/takealot-cli/releases/tag/v0.1.0
