@@ -8,7 +8,7 @@
 
 Pure REST — talks directly to the Takealot mobile API using the Android user-agent that bypasses Cloudflare. No Playwright, no browser, no puppeteer. A preference engine learns your buying history and picks the best match when you add items to your cart.
 
-<!-- docs/assets/hero.png -->
+![takealot demo](docs/assets/hero.svg)
 
 ## Install
 
