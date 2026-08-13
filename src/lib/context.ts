@@ -41,7 +41,7 @@ export class Context {
         getCredentials: () => this.creds,
         persist: (tokens) => this.persistTokens(tokens),
         log: (msg) => this.logger.debug(msg),
-        // Wire the OTP provider so ensureValid() and reauthenticate() can
+        // Wire the OTP provider so ensureValid() and reauthenticateIfCurrent() can
         // handle 2FA on re-login when the account has it enabled.
         otpProvider: () => this.promptOtp(),
       },

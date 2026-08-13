@@ -1,6 +1,6 @@
 # AGENTS.md — takealot-cli
 
-Takealot shopping CLI. TypeScript, talks directly to the Takealot mobile API via Android user-agent (bypasses Cloudflare).
+Takealot shopping CLI. TypeScript, talks directly to the Takealot mobile API via Android user-agent; authenticated requests use the mobile API and User-Agent; the 2FA flow requires the __cf_bm cookie.
 
 ## Structure
 
@@ -60,7 +60,7 @@ All targets require Node ≥ 18.
 
 ## Key Design Decisions
 
-- **Direct API** — uses the Takealot Android mobile API with an Android User-Agent string. This bypasses Cloudflare bot protection without Playwright or headless browsers.
+- **Direct API** — uses the Takealot Android mobile API with an Android User-Agent string. The mobile UA is used for authenticated API calls; the 2FA handshake additionally requires the __cf_bm cookie. No headless browser is needed.
 - **2FA / OTP login** — accounts with two-step verification enabled require an OTP code. `loginWithOtp()` detects the `two_step_verification: "enabled_untrusted"` response, captures the `__cf_bm` Cloudflare cookie from the first response, and sends it back with the OTP in a second request. The `__cf_bm` cookie is used only during the 2FA handshake and is never persisted.
 - **Preference engine** — learns from your order history and ranks search results by: exact past purchase → brand match in category → explicit brand list → Jaccard title similarity.
 - **Session caching** — credentials and tokens are stored in `~/.config/takealot-cli/` (XDG, `chmod 0600`). Tokens are refreshed automatically on expiry.
@@ -79,7 +79,7 @@ See `docs/MOBILE-API.md` for the full request/response format.
 
 ## Constraints
 
-- **Do not change the Android UA strategy** in `src/lib/api-client.ts`. The mobile UA is the Cloudflare bypass; swapping it for a desktop UA will break all API calls.
+- **Do not change the Android UA strategy** in `src/lib/api-client.ts`. The mobile UA is required for the API to respond correctly; swapping it for a desktop UA will cause API calls to fail. The 2FA flow additionally requires the __cf_bm cookie.
 - **Keep `--json` on every data command.** The flag is part of the public interface and used by scripts.
 - **Preference engine must remain.** The ranking logic in `src/lib/preferences.ts` is a core feature, not optional.
 - **No browser automation.** Do not introduce Playwright, Puppeteer, or any headless browser dependency.

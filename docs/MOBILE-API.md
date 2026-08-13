@@ -2,7 +2,7 @@
 
 Base: `https://api.takealot.com/rest/v-1-16-0`
 User-Agent: `TAL-Android/3.51.0 (fi.android.takealot; build:800735; 14; samsung; SM-S928B; Phone)`
-Auth: `Authorization: Bearer {jwt}` + cookies: `taid={id_token}; tal_jwt={jwt}; tal_csrf={csrf_token}; did={did_token}`
+Auth: `Authorization: Bearer {jwt}` + cookies: `taid={id_token}; tal_jwt={jwt}; tal_csrf={csrf_token}; did={did}`
 
 ## Auth
 
@@ -11,7 +11,7 @@ Auth: `Authorization: Bearer {jwt}` + cookies: `taid={id_token}; tal_jwt={jwt}; 
 POST /customers/login
 Content-Type: application/json
 
-{"platform":"android","sections":[{"section_id":"customer_login","fields":[{"field_id":"email","value":"..."},{"field_id":"password","value":"..."}]}]}
+{"platform":"android","sections":[{"section_id":"customer_login","fields":[{"field_id":"email","value":"..."},{"field_id":"password","value":"..."},{"field_id":"captcha","value":""}]}]}
 ```
 **Response:** `auth_info.{id_token, jwt, refresh_token, csrf_token, tracking_id, customer_id, id_token_expires, access_key, private_key, did}`
 
@@ -58,7 +58,7 @@ Cookie: __cf_bm=...
 
 **Response:** Same `auth_info` as non-2FA login.
 
-**Note:** Each POST to `/customers/login` triggers a new OTP. Submit the OTP from the first response's OTP challenge only. The OTP is valid for 5 minutes (`valid_millis: 300000`).
+**Note:** Each credential-only POST to /customers/login initiates a new 2FA challenge. Submit the OTP from the first response's OTP challenge only. The OTP is valid for 5 minutes (`valid_millis: 300000`).
 
 ### Refresh Token
 ```
@@ -164,7 +164,7 @@ method=Credit+Card+Token&token_reference={card_uuid}&budget_period=Straight
 
 ### 6. PayGate 3DS Flow (WebView)
 The `url` from step 5 loads a PayGate page that handles 3DS.
-- For **saved cards with tokenized payment**, 3DS is auto-approved (frictionless) — no OTP needed!
+- For **saved cards with tokenized payment**, 3DS typically uses frictionless flow, but issuer challenges may still occur
 - Flow: `pay.takealot.com/initiation/{id}` → `secure.paygate.co.za` → `3d.dpopayments.io` → `pay.takealot.com/completion/{id}`
 - Completion POST body: `PAY_REQUEST_ID={id}&TRANSACTION_STATUS=1&CHECKSUM={hash}`
 
@@ -202,8 +202,8 @@ GET /customers/{customer_id}/credits/balance
 
 ## Key Notes
 
-1. **No Cloudflare blocking on mobile API** — the mobile User-Agent + cookies bypass all anti-bot
-2. **Saved card tokens = frictionless 3DS** — no OTP, no manual intervention
+1. **Authenticated requests use the mobile API and User-Agent; the 2FA handshake requires the __cf_bm cookie returned by the first login response**
+2. **Saved card tokens typically use frictionless 3DS, but issuer challenges may still occur**
 3. **JWT expires in 1 hour** — use refresh_token to get new jwt before expiry
 4. **refresh_token rotates** — each refresh returns a new refresh_token (old one invalidated)
 5. **Content-Type varies** — checkout init uses `text/plain`, payment uses `x-www-form-urlencoded`, most others use `application/json`
