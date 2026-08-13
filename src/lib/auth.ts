@@ -27,7 +27,7 @@ export interface AuthManagerOptions {
   /** Called whenever the token set changes so callers can persist it. */
   persist: (tokens: TokenSet) => void;
   log: (msg: string) => void;
-  /** Optional OTP provider for 2FA. When set, ensureValid() and reauthenticate()
+  /** Optional OTP provider for 2FA. When set, ensureValid() and reauthenticateIfCurrent()
    *  use loginWithOtp() so re-login can complete 2FA challenges. */
   otpProvider?: () => Promise<string>;
 }
@@ -96,7 +96,7 @@ function loginBody(
 }
 
 /** Extract the __cf_bm cookie value from a fetch Response. */
-function extractCfBmCookie(res: Response): string {
+export function extractCfBmCookie(res: Response): string {
   // Try getSetCookie() first (Node 18.14+)
   const cookies = res.headers.getSetCookie?.() ?? [];
   for (const cookie of cookies) {
@@ -105,21 +105,19 @@ function extractCfBmCookie(res: Response): string {
       return semi > 0 ? cookie.substring(0, semi) : cookie;
     }
   }
-  // Fallback: parse Set-Cookie header manually
+  // Fallback: parse Set-Cookie header manually with regex
   const raw = res.headers.get('set-cookie');
   if (raw) {
-    for (const part of raw.split(',')) {
-      if (part.trim().startsWith('__cf_bm=')) {
-        const semi = part.indexOf(';');
-        return semi > 0 ? part.trim().substring(0, semi) : part.trim();
-      }
-    }
+    const match = raw.match(/(?:^|,\s*)__cf_bm=([^;,]*)/);
+    if (match && match[1]) return `__cf_bm=${match[1].trim()}`;
   }
   return '';
 }
 
 export class AuthManager {
   private tokens: TokenSet | null;
+  private authGeneration = 0;
+  private authInFlight: Promise<void> | null = null;
 
   constructor(
     private opts: AuthManagerOptions,
@@ -127,6 +125,8 @@ export class AuthManager {
   ) {
     this.tokens = tokens;
   }
+
+  get currentAuthGeneration(): number { return this.authGeneration; }
 
   get isAuthenticated(): boolean {
     return this.tokens !== null;
@@ -172,6 +172,7 @@ export class AuthManager {
 
   private setTokens(tokens: TokenSet): TokenSet {
     this.tokens = tokens;
+    this.authGeneration++;
     this.opts.persist(tokens);
     return tokens;
   }
@@ -325,15 +326,38 @@ export class AuthManager {
 
   /** Ensure we hold a usable jwt, logging in or refreshing as needed. */
   async ensureValid(): Promise<void> {
+    const generationAtEntry = this.authGeneration;
+
+    while (true) {
+      // Fast path: tokens valid OR a transition completed since we entered
+      if (
+        this.tokens &&
+        (Date.now() < this.tokens.jwtExpiresAt - REFRESH_SKEW_MS ||
+          this.authGeneration !== generationAtEntry)
+      ) {
+        return;
+      }
+      // If a transition is in flight, await it then loop back to recheck
+      if (this.authInFlight) {
+        await this.authInFlight;
+        continue;
+      }
+      // Start a new transition
+      this.authInFlight = this.doEnsureValid()
+        .finally(() => { this.authInFlight = null; });
+      await this.authInFlight;
+      // If doEnsureValid threw, the await rejects and the error propagates
+      // If it succeeded, generation changed and the fast path will return
+    }
+  }
+
+  private async doEnsureValid(): Promise<void> {
     if (!this.tokens) {
       const creds = this.opts.getCredentials();
-      if (!creds) {
-        throw new Error('Not authenticated. Run `takealot login` first.');
-      }
+      if (!creds) throw new Error('Not authenticated. Run `takealot login` first.');
       await this.doLogin(creds);
       return;
     }
-
     if (Date.now() >= this.tokens.jwtExpiresAt - REFRESH_SKEW_MS) {
       try {
         await this.refresh();
@@ -346,8 +370,26 @@ export class AuthManager {
     }
   }
 
-  /** Force a fresh login + token rotation after an unexpected 401. */
-  async reauthenticate(): Promise<void> {
+  /** Force a fresh login + token rotation after an unexpected 401.
+   *  Only reauthenticates if the auth generation hasn't already changed. */
+  async reauthenticateIfCurrent(expectedGeneration: number): Promise<void> {
+    // Fast path: generation already changed
+    if (this.authGeneration !== expectedGeneration) return;
+
+    while (true) {
+      if (this.authGeneration !== expectedGeneration) return;
+      if (this.authInFlight) {
+        await this.authInFlight;
+        continue;
+      }
+      this.authInFlight = this.doReauthenticate()
+        .finally(() => { this.authInFlight = null; });
+      await this.authInFlight;
+      return;  // generation changed, or it threw
+    }
+  }
+
+  private async doReauthenticate(): Promise<void> {
     const creds = this.opts.getCredentials();
     if (creds) {
       await this.doLogin(creds);

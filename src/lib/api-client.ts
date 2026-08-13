@@ -5,8 +5,7 @@
  *   - Unauthenticated SEARCH uses the desktop search endpoint + a browser UA,
  *     which returns rich product results and isn't blocked by Cloudflare.
  *   - Everything authenticated (cart, orders, cards, checkout) uses the mobile
- *     app endpoint + the TAL-Android UA + Bearer/csrf/cookies, which bypasses
- *     the anti-bot that blocks the desktop API on transactional routes.
+ *     API and User-Agent for authenticated calls; 2FA flow requires __cf_bm cookie.
  *
  * Money note: authenticated endpoints return amounts in cents; this client
  * converts them to Rand. Search prices are passed through as the raw API value
@@ -96,10 +95,15 @@ export class TakealotClient {
    */
   async authedFetch(path: string, init: RequestInit = {}): Promise<Response> {
     await this.auth.ensureValid();
+    const genBefore = this.auth.currentAuthGeneration;
     let res = await this.rawAuthedFetch(path, init);
     if (res.status === 401) {
-      this.logger.debug('authedFetch: 401, re-authenticating and retrying once');
-      await this.auth.reauthenticate();
+      if (this.auth.currentAuthGeneration === genBefore) {
+        this.logger.debug('authedFetch: 401, re-authenticating and retrying once');
+        await this.auth.reauthenticateIfCurrent(genBefore);
+      } else {
+        this.logger.debug('authedFetch: 401 but auth already rotated, retrying');
+      }
       res = await this.rawAuthedFetch(path, init);
     }
     return res;

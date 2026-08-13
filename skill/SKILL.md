@@ -1,6 +1,6 @@
 ---
 name: takealot
-description: Shop on Takealot.com from the terminal. Search, add to cart, manage wishlist, and checkout via pure API.
+description: Shop on Takealot.com from the terminal. Search, add to cart, and checkout via pure API.
 ---
 
 # takealot skill
@@ -26,33 +26,19 @@ npm link   # puts `takealot` on your PATH
 
 ## Credentials
 
-Credentials are managed by the `takealot login` command and cached automatically. The CLI stores tokens in `~/.config/takealot-cli/credentials.json` (XDG-respecting, `chmod 0600`).
+Credentials are managed by the `takealot login` command and cached automatically. The CLI stores email, plaintext password (protected only by filesystem permissions, chmod 0600), and cached tokens in `~/.config/takealot-cli/credentials.json` (XDG-respecting, `chmod 0600`).
 
-For OpenClaw skill injection, place credentials at:
-
-```
-~/.openclaw/credentials/takealot.json
-```
-
-Example shape (do **not** hard-code credentials; use `takealot login` to populate):
-
-```json
-{
-  "email": "you@example.com"
-}
-```
-
-The `login` command prompts for your Takealot account email and password interactively, then caches the token set. If your account has two-step verification (2FA) enabled, you will also be prompted for an OTP code sent to your phone. Tokens auto-refresh on expiry — you only need to log in once.
+The `login` command prompts for your Takealot account email and password interactively, then caches the token set. If your account has two-step verification (2FA) enabled, you will also be prompted for an OTP code sent to your phone. Tokens auto-refresh on expiry; if refresh fails and full login is required, a 2FA account requires an interactive OTP prompt.
 
 ## Headless / agent usage
 
 First-time login may require an interactive terminal:
-- If your account has 2FA enabled, you'll be prompted for an OTP code sent to your phone. The CLI uses `trust_this_device: true` so after the first login the device is trusted and subsequent logins may skip the OTP challenge.
-- Token refresh still works headless: once tokens are cached, `ensureValid()` and `reauthenticate()` refresh or re-login without requiring OTP (trusted device).
-- **Seed credentials once, interactively, on the machine:** run `takealot login` in a real terminal so `~/.config/takealot-cli/credentials.json` gets populated. After that, most headless calls work — tokens auto-refresh on expiry.
+- If your account has 2FA enabled, you'll be prompted for an OTP code sent to your phone. Token refresh works headlessly; full re-login on a 2FA account requires an interactive OTP prompt.
+- Token refresh works headlessly; full re-login on a 2FA account requires an interactive OTP prompt.
+- **Seed credentials once, interactively, on the machine:** run `takealot login` in a real terminal so `~/.config/takealot-cli/credentials.json` gets populated. After that, most calls work headlessly via token refresh.
 - **Never run `takealot login --reset` headless.** It re-prompts for email/password and throws `--reset needs an interactive terminal` when there is no TTY. If credentials are wrong, ask the user to run `takealot login --reset` themselves.
 - **If no credentials are cached yet,** any authed command fails with `No saved credentials. Run 'takealot login' in an interactive terminal first.` — surface that to the user rather than retrying; an agent cannot complete first-time login unattended.
-- Search needs no login, so `takealot search … --json` always works headless.
+- Search needs no login, so `takealot search … --json` always works.
 - For checkout, always dry-run first (`takealot checkout`) and only pass `--confirm --yes` when the user has explicitly approved the order and total.
 
 ## Commands
@@ -138,7 +124,7 @@ Config lives in `~/.config/takealot-cli/` (respects `$XDG_CONFIG_HOME`):
 | File | Contents |
 |------|----------|
 | `config.json` | API base URLs, preferred card, explicit brand list |
-| `credentials.json` | Email, cached token set — `chmod 0600` |
+| `credentials.json` | Email, plaintext password (protected only by filesystem permissions, chmod 0600), and cached tokens |
 | `preferences.json` | Order-history preference cache |
 
 ### Auth
