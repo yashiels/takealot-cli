@@ -28,9 +28,6 @@ export interface TokenSet {
 
 /** Stored login credentials plus the most recent token set. */
 export interface Credentials {
-  /** Whether to trust this device during OTP login (avoids re-OTP). */
-  trustDevice?: boolean;
-
   email: string;
   password: string;
   tokens?: TokenSet;

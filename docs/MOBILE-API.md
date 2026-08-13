@@ -15,6 +15,51 @@ Content-Type: application/json
 ```
 **Response:** `auth_info.{id_token, jwt, refresh_token, csrf_token, tracking_id, customer_id, id_token_expires, access_key, private_key, did}`
 
+### Login with Two-Step Verification (2FA)
+
+When the account has 2FA enabled, the login flow is two requests:
+
+**Request 1 — Submit credentials:**
+```
+POST /customers/login
+Content-Type: application/json
+
+{"platform":"android","sections":[{"section_id":"customer_login","fields":[{"field_id":"email","value":"..."},{"field_id":"password","value":"..."},{"field_id":"captcha","value":""}]}]}
+```
+
+**Response (2FA challenge):**
+```json
+{
+  "two_step_verification": "enabled_untrusted",
+  "otp_status": {"remaining_retries": 2, "status": "unverified", "valid_millis": 300000},
+  "data_sections": [
+    {"section_id": "customer_login", "is_complete": true},
+    {"section_id": "two_step_verification", "data_fields": [
+      {"field_id": "otp", "title": "Enter OTP"},
+      {"field_id": "trust_this_device", "data_type": "boolean"}
+    ]}
+  ]
+}
+```
+
+The response also sets a `__cf_bm` Cloudflare cookie that MUST be included in the second request.
+
+**Request 2 — Submit OTP:**
+```
+POST /customers/login
+Content-Type: application/json
+Cookie: __cf_bm=...
+
+{"platform":"android","sections":[
+  {"section_id":"customer_login","fields":[{"field_id":"email","value":"..."},{"field_id":"password","value":"..."},{"field_id":"captcha","value":""}]},
+  {"section_id":"two_step_verification","fields":[{"field_id":"otp","value":"12345"},{"field_id":"trust_this_device","value":true}]}
+]}
+```
+
+**Response:** Same `auth_info` as non-2FA login.
+
+**Note:** Each POST to `/customers/login` triggers a new OTP. Submit the OTP from the first response's OTP challenge only. The OTP is valid for 5 minutes (`valid_millis: 300000`).
+
 ### Refresh Token
 ```
 POST /customers/auth/refresh

@@ -41,6 +41,9 @@ export class Context {
         getCredentials: () => this.creds,
         persist: (tokens) => this.persistTokens(tokens),
         log: (msg) => this.logger.debug(msg),
+        // Wire the OTP provider so ensureValid() and reauthenticate() can
+        // handle 2FA on re-login when the account has it enabled.
+        otpProvider: () => this.promptOtp(),
       },
       this.creds?.tokens ?? null,
     );
@@ -106,7 +109,7 @@ export class Context {
     return tokens.customerId;
   }
 
-  /** Prompt for the OTP when 2FA is required. */
+  /** Prompt for the OTP when 2FA is required. Does not echo input. */
   private async promptOtp(): Promise<string> {
     if (this.logger.isJson || !process.stdin.isTTY) {
       throw new Error(
@@ -114,6 +117,6 @@ export class Context {
           'Run `takealot login` in an interactive terminal.',
       );
     }
-    return promptText('Enter OTP sent to your phone: ');
+    return promptPassword('Enter OTP sent to your phone: ');
   }
 }

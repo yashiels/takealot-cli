@@ -27,6 +27,9 @@ export interface AuthManagerOptions {
   /** Called whenever the token set changes so callers can persist it. */
   persist: (tokens: TokenSet) => void;
   log: (msg: string) => void;
+  /** Optional OTP provider for 2FA. When set, ensureValid() and reauthenticate()
+   *  use loginWithOtp() so re-login can complete 2FA challenges. */
+  otpProvider?: () => Promise<string>;
 }
 
 /** Pull a TokenSet out of a login/refresh response body. */
@@ -94,11 +97,22 @@ function loginBody(
 
 /** Extract the __cf_bm cookie value from a fetch Response. */
 function extractCfBmCookie(res: Response): string {
+  // Try getSetCookie() first (Node 18.14+)
   const cookies = res.headers.getSetCookie?.() ?? [];
   for (const cookie of cookies) {
     if (cookie.startsWith('__cf_bm=')) {
       const semi = cookie.indexOf(';');
       return semi > 0 ? cookie.substring(0, semi) : cookie;
+    }
+  }
+  // Fallback: parse Set-Cookie header manually
+  const raw = res.headers.get('set-cookie');
+  if (raw) {
+    for (const part of raw.split(',')) {
+      if (part.trim().startsWith('__cf_bm=')) {
+        const semi = part.indexOf(';');
+        return semi > 0 ? part.trim().substring(0, semi) : part.trim();
+      }
     }
   }
   return '';
@@ -216,10 +230,10 @@ export class AuthManager {
 
     const data = await res.json().catch(() => ({}));
 
-    // Check for two-step verification requirement
+    // Check for two-step verification requirement (exact value match)
     const twoStepVerification = (data as any)?.two_step_verification as string | undefined;
-    if (!twoStepVerification) {
-      // No 2FA — parse the response directly (backwards compatible)
+    if (twoStepVerification !== 'enabled_untrusted') {
+      // Not a 2FA challenge — parse the response directly (backwards compatible)
       if (!res.ok && !(data as any)?.auth_info) {
         throw new Error(
           `Login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`,
@@ -228,7 +242,14 @@ export class AuthManager {
       return this.setTokens(parseAuthInfo(data));
     }
 
-    this.opts.log(`auth: 2FA required (${twoStepVerification}), requesting OTP`);
+    this.opts.log(`auth: 2FA required (${twoStepVerification})`);
+
+    // The __cf_bm cookie is required for the second request
+    if (!cfBmCookie) {
+      throw new Error(
+        'Two-step verification started, but the required __cf_bm cookie was not returned.',
+      );
+    }
 
     // Get OTP from the caller
     const otp = await otpPromise();
@@ -291,6 +312,17 @@ export class AuthManager {
     return this.setTokens(parseAuthInfo(data));
   }
 
+  /**
+   * Re-login helper: uses loginWithOtp when an otpProvider is available,
+   * falling back to the single-step login() for non-2FA accounts.
+   */
+  private doLogin(creds: Credentials): Promise<TokenSet> {
+    if (this.opts.otpProvider) {
+      return this.loginWithOtp(creds.email, creds.password, this.opts.otpProvider);
+    }
+    return this.login(creds.email, creds.password);
+  }
+
   /** Ensure we hold a usable jwt, logging in or refreshing as needed. */
   async ensureValid(): Promise<void> {
     if (!this.tokens) {
@@ -298,7 +330,7 @@ export class AuthManager {
       if (!creds) {
         throw new Error('Not authenticated. Run `takealot login` first.');
       }
-      await this.login(creds.email, creds.password);
+      await this.doLogin(creds);
       return;
     }
 
@@ -309,7 +341,7 @@ export class AuthManager {
         this.opts.log(`auth: refresh failed (${(err as Error).message}); trying re-login`);
         const creds = this.opts.getCredentials();
         if (!creds) throw err;
-        await this.login(creds.email, creds.password);
+        await this.doLogin(creds);
       }
     }
   }
@@ -318,7 +350,7 @@ export class AuthManager {
   async reauthenticate(): Promise<void> {
     const creds = this.opts.getCredentials();
     if (creds) {
-      await this.login(creds.email, creds.password);
+      await this.doLogin(creds);
       return;
     }
     await this.refresh();
