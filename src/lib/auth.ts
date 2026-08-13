@@ -2,6 +2,7 @@
  * AuthManager — owns the token lifecycle for the Takealot API.
  *
  * - login(): POST /customers/login, parse auth_info into a TokenSet.
+ * - loginWithOtp(): two-step login with OTP support.
  * - refresh(): POST /customers/auth/refresh using the (rotating) refresh_token.
  * - ensureValid(): refresh proactively when the jwt is near expiry, falling back
  *   to a full re-login with stored credentials if refresh fails.
@@ -56,6 +57,51 @@ function parseAuthInfo(data: unknown): TokenSet {
     customerId,
     jwtExpiresAt: Date.now() + ttlMs,
   };
+}
+
+/** Build the login request body sections, with optional OTP section. */
+function loginBody(
+  platform: string,
+  email: string,
+  password: string,
+  otp?: string,
+  trustDevice?: boolean,
+) {
+  const sections: Array<{
+    section_id: string;
+    fields: Array<{ field_id: string; value: string | boolean }>;
+  }> = [
+    {
+      section_id: 'customer_login',
+      fields: [
+        { field_id: 'email', value: email },
+        { field_id: 'password', value: password },
+        { field_id: 'captcha', value: '' },
+      ],
+    },
+  ];
+  if (otp !== undefined) {
+    sections.push({
+      section_id: 'two_step_verification',
+      fields: [
+        { field_id: 'otp', value: otp },
+        { field_id: 'trust_this_device', value: trustDevice ?? true },
+      ],
+    });
+  }
+  return { platform, sections };
+}
+
+/** Extract the __cf_bm cookie value from a fetch Response. */
+function extractCfBmCookie(res: Response): string {
+  const cookies = res.headers.getSetCookie?.() ?? [];
+  for (const cookie of cookies) {
+    if (cookie.startsWith('__cf_bm=')) {
+      const semi = cookie.indexOf(';');
+      return semi > 0 ? cookie.substring(0, semi) : cookie;
+    }
+  }
+  return '';
 }
 
 export class AuthManager {
@@ -116,21 +162,13 @@ export class AuthManager {
     return tokens;
   }
 
+  /**
+   * Single-step login (email + password only). For accounts without 2FA.
+   * For accounts with 2FA, use loginWithOtp() instead.
+   */
   async login(email: string, password: string): Promise<TokenSet> {
     this.opts.log('auth: login');
-    const body = {
-      platform: this.opts.platform,
-      sections: [
-        {
-          section_id: 'customer_login',
-          fields: [
-            { field_id: 'email', value: email },
-            { field_id: 'password', value: password },
-            { field_id: 'captcha', value: '' },
-          ],
-        },
-      ],
-    };
+    const body = loginBody(this.opts.platform, email, password);
 
     const res = await fetch(`${this.opts.apiBase}/customers/login`, {
       method: 'POST',
@@ -147,6 +185,83 @@ export class AuthManager {
       throw new Error(`Login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`);
     }
     return this.setTokens(parseAuthInfo(data));
+  }
+
+  /**
+   * Two-step login with OTP support. Sends email+password first, then detects
+   * whether Takealot requires two-step verification. If it does, calls the
+   * provided `otpPromise` to obtain the OTP and submits it in a second request
+   * that reuses the Cloudflare __cf_bm cookie from the first response.
+   */
+  async loginWithOtp(
+    email: string,
+    password: string,
+    otpPromise: () => Promise<string>,
+  ): Promise<TokenSet> {
+    this.opts.log('auth: login (with OTP support)');
+    const body = loginBody(this.opts.platform, email, password);
+
+    const res = await fetch(`${this.opts.apiBase}/customers/login`, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json, */*',
+        'content-type': 'application/json',
+        'user-agent': this.opts.userAgent,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const cfBmCookie = extractCfBmCookie(res);
+    this.opts.log(`auth: __cf_bm cookie ${cfBmCookie ? 'captured' : 'not found'}`);
+
+    const data = await res.json().catch(() => ({}));
+
+    // Check for two-step verification requirement
+    const twoStepVerification = (data as any)?.two_step_verification as string | undefined;
+    if (!twoStepVerification) {
+      // No 2FA — parse the response directly (backwards compatible)
+      if (!res.ok && !(data as any)?.auth_info) {
+        throw new Error(
+          `Login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`,
+        );
+      }
+      return this.setTokens(parseAuthInfo(data));
+    }
+
+    this.opts.log(`auth: 2FA required (${twoStepVerification}), requesting OTP`);
+
+    // Get OTP from the caller
+    const otp = await otpPromise();
+    if (!otp || !/^\d+$/.test(otp)) {
+      throw new Error('Invalid OTP: must be numeric digits only');
+    }
+
+    // Second request with both sections + __cf_bm cookie
+    const otpBody = loginBody(this.opts.platform, email, password, otp, true);
+    const secondHeaders: Record<string, string> = {
+      accept: 'application/json, */*',
+      'content-type': 'application/json',
+      'user-agent': this.opts.userAgent,
+    };
+    if (cfBmCookie) {
+      secondHeaders['cookie'] = cfBmCookie;
+    }
+
+    this.opts.log('auth: submitting OTP');
+    const otpRes = await fetch(`${this.opts.apiBase}/customers/login`, {
+      method: 'POST',
+      headers: secondHeaders,
+      body: JSON.stringify(otpBody),
+    });
+
+    const otpData = await otpRes.json().catch(() => ({}));
+    if (!otpRes.ok && !(otpData as any)?.auth_info) {
+      throw new Error(
+        `OTP login failed (HTTP ${otpRes.status}): ${(otpData as any)?.message ?? otpRes.statusText}`,
+      );
+    }
+    this.opts.log('auth: OTP accepted, login complete');
+    return this.setTokens(parseAuthInfo(otpData));
   }
 
   async refresh(): Promise<TokenSet> {
