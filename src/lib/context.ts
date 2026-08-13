@@ -41,6 +41,9 @@ export class Context {
         getCredentials: () => this.creds,
         persist: (tokens) => this.persistTokens(tokens),
         log: (msg) => this.logger.debug(msg),
+        // Wire the OTP provider so ensureValid() and reauthenticate() can
+        // handle 2FA on re-login when the account has it enabled.
+        otpProvider: () => this.promptOtp(),
       },
       this.creds?.tokens ?? null,
     );
@@ -87,7 +90,7 @@ export class Context {
       throw new Error('No saved credentials. Run `takealot login` in an interactive terminal first.');
     }
 
-    this.logger.info('No saved Takealot credentials found — let’s set them up.');
+    this.logger.info('No saved Takealot credentials found — let\'s set them up.');
     const email = await promptText('Takealot email: ');
     const password = await promptPassword('Takealot password: ');
     if (!email || !password) throw new Error('Email and password are required.');
@@ -98,9 +101,22 @@ export class Context {
   /** Log in fresh, ensuring credentials exist first. Returns the customer id. */
   async login(): Promise<number> {
     const { email, password } = await this.ensureCredentials();
-    const tokens = await this.auth.login(email, password);
+    const tokens = await this.auth.loginWithOtp(email, password, () =>
+      this.promptOtp(),
+    );
     this.persistCredentials();
     this.logger.debug('Credentials persisted after successful login.');
     return tokens.customerId;
+  }
+
+  /** Prompt for the OTP when 2FA is required. Does not echo input. */
+  private async promptOtp(): Promise<string> {
+    if (this.logger.isJson || !process.stdin.isTTY) {
+      throw new Error(
+        'Two-step verification required but stdin is not interactive. ' +
+          'Run `takealot login` in an interactive terminal.',
+      );
+    }
+    return promptPassword('Enter OTP sent to your phone: ');
   }
 }
