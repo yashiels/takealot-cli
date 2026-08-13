@@ -30,13 +30,12 @@ Credentials are managed by the `takealot login` command and cached automatically
 
 The `login` command prompts for your Takealot account email and password interactively, then caches the token set. If your account has two-step verification (2FA) enabled, you will also be prompted for an OTP code sent to your phone. Tokens auto-refresh on expiry; if refresh fails and full login is required, a 2FA account requires an interactive OTP prompt.
 
-## Headless / agent usage
+## Automated / agent usage
 
-First-time login may require an interactive terminal:
-- If your account has 2FA enabled, you'll be prompted for an OTP code sent to your phone. Token refresh works headlessly; full re-login on a 2FA account requires an interactive OTP prompt.
-- Token refresh works headlessly; full re-login on a 2FA account requires an interactive OTP prompt.
-- **Seed credentials once, interactively, on the machine:** run `takealot login` in a real terminal so `~/.config/takealot-cli/credentials.json` gets populated. After that, most calls work headlessly via token refresh.
-- **Never run `takealot login --reset` headless.** It re-prompts for email/password and throws `--reset needs an interactive terminal` when there is no TTY. If credentials are wrong, ask the user to run `takealot login --reset` themselves.
+First-time login requires an interactive terminal:
+- If your account has 2FA enabled, you'll be prompted for an OTP code sent to your phone. Token refresh works without interaction; full re-login on a 2FA account requires an interactive OTP prompt.
+- **Seed credentials once, interactively, on the machine:** run `takealot login` in a real terminal so `~/.config/takealot-cli/credentials.json` gets populated. After that, most calls work without interaction via token refresh.
+- **Never run `takealot login --reset` unattended.** It re-prompts for email/password and throws `--reset needs an interactive terminal` when there is no TTY. If credentials are wrong, ask the user to run `takealot login --reset` themselves.
 - **If no credentials are cached yet,** any authed command fails with `No saved credentials. Run 'takealot login' in an interactive terminal first.` — surface that to the user rather than retrying; an agent cannot complete first-time login unattended.
 - Search needs no login, so `takealot search … --json` always works.
 - For checkout, always dry-run first (`takealot checkout`) and only pass `--confirm --yes` when the user has explicitly approved the order and total.

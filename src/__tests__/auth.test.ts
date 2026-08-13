@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AuthManager, extractCfBmCookie } from '../lib/auth.js';
+import { TakealotClient } from '../lib/api-client.js';
 import type { Credentials, TokenSet } from '../types.js';
 
 const API_BASE = 'https://api.takealot.com/rest/v-1-16-0';
@@ -82,6 +83,25 @@ function makeMockResponse(body: unknown, opts: { status?: number; setCookie?: st
   } as unknown as Response;
 }
 
+/** Response mock where getSetCookie() is intentionally absent so the regex fallback is exercised. */
+function makeMockResponseNoSetCookie(body: unknown, opts: { status?: number; setCookieRaw?: string; ok?: boolean } = {}) {
+  const status = opts.status ?? 200;
+  const ok = opts.ok ?? (status >= 200 && status < 300);
+  const headers = new Headers();
+  if (opts.setCookieRaw) {
+    headers.set('set-cookie', opts.setCookieRaw);
+  }
+  // No getSetCookie() on this headers object — forces fallback path
+  return {
+    ok,
+    status,
+    statusText: ok ? 'OK' : 'Error',
+    headers,
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  } as unknown as Response;
+}
+
 function makeAuthManager(opts: {
   tokens?: TokenSet | null;
   creds?: Credentials | null;
@@ -108,6 +128,19 @@ function makeAuthManager(opts: {
   };
 }
 
+function makeClient(opts: {
+  tokens?: TokenSet | null;
+  creds?: Credentials | null;
+  otpProvider?: () => Promise<string>;
+}) {
+  const { auth, persist, log } = makeAuthManager(opts);
+  const client = new TakealotClient({
+    auth,
+    logger: { debug: vi.fn() },
+  });
+  return { client, auth, persist, log };
+}
+
 describe('AuthManager concurrency', () => {
   let originalFetch: typeof globalThis.fetch;
 
@@ -122,14 +155,13 @@ describe('AuthManager concurrency', () => {
 
   // 1. concurrent refresh success: two ensureValid calls when tokens near expiry, only one refresh fetch
   it('concurrent refresh: coalesces two ensureValid calls into one refresh', async () => {
-    const tokens = makeTokens({ jwtExpiresAt: Date.now() + 10_000 }); // near expiry
+    const tokens = makeTokens({ jwtExpiresAt: Date.now() + 10_000 });
     const { auth, persist } = makeAuthManager({ tokens });
 
     const fetchCalls: string[] = [];
-    const refreshPromise = Promise.resolve(mockRefreshResponse({ jwt: 'jwt-new' }));
     globalThis.fetch = vi.fn(async (url: string | URL) => {
       fetchCalls.push(String(url));
-      return makeMockResponse(refreshPromise as any);
+      return makeMockResponse(mockRefreshResponse({ jwt: 'jwt-new' }));
     }) as any;
 
     await Promise.all([auth.ensureValid(), auth.ensureValid()]);
@@ -155,13 +187,10 @@ describe('AuthManager concurrency', () => {
       }
       if (u.includes('/customers/login')) {
         if (callCount === 2) {
-          // First login call: 2FA challenge
-          const res = makeMockResponse(mock2faChallengeResponse(), {
+          return makeMockResponse(mock2faChallengeResponse(), {
             setCookie: ['__cf_bm=cfcookie123; Path=/; Domain=takealot.com'],
           });
-          return res;
         }
-        // Second login call: OTP submission success
         return makeMockResponse(mockAuthInfoResponse({ jwt: 'jwt-after-otp' }));
       }
       return makeMockResponse({}, { status: 500 });
@@ -180,25 +209,6 @@ describe('AuthManager concurrency', () => {
     const creds = makeCreds();
     const { auth } = makeAuthManager({ tokens, creds });
 
-    let refreshAttempted = false;
-    globalThis.fetch = vi.fn(async (url: string | URL) => {
-      const u = String(url);
-      if (u.includes('/auth/refresh')) {
-        if (!refreshAttempted) {
-          refreshAttempted = true;
-          return makeMockResponse({ message: 'fail' }, { status: 401 });
-        }
-        return makeMockResponse(mockRefreshResponse({ jwt: 'jwt-retry' }));
-      }
-      if (u.includes('/customers/login')) {
-        return makeMockResponse(mockAuthInfoResponse({ jwt: 'jwt-login-fallback' }));
-      }
-      return makeMockResponse({}, { status: 500 });
-    }) as any;
-
-    // First ensureValid should reject (refresh fails, no creds for login fallback... wait creds exist)
-    // Actually creds exist, so it will fall back to login. Let's make login fail too on first pass.
-    // Re-adjust: make login also fail first time
     let loginAttempted = false;
     globalThis.fetch = vi.fn(async (url: string | URL) => {
       const u = String(url);
@@ -215,11 +225,7 @@ describe('AuthManager concurrency', () => {
       return makeMockResponse({}, { status: 500 });
     }) as any;
 
-    // First call should throw
     await expect(auth.ensureValid()).rejects.toThrow();
-
-    // Second call should succeed (lock cleared)
-    // Need fresh creds since login failed - creds still exist
     await auth.ensureValid();
     expect(auth.currentTokens?.jwt).toBe('jwt-retry-ok');
   });
@@ -241,42 +247,63 @@ describe('AuthManager concurrency', () => {
     expect(auth.currentTokens?.jwt).toBe('jwt-login');
   });
 
-  // 5. ensureValid with valid tokens overlapping reauthenticate: no transition triggered
-  it('ensureValid with valid tokens does not trigger any transition', async () => {
-    const tokens = makeTokens({ jwtExpiresAt: Date.now() + 3_600_000 }); // far from expiry
-    const { auth, persist } = makeAuthManager({ tokens });
-
-    globalThis.fetch = vi.fn(async () => {
-      return makeMockResponse({});
-    }) as any;
-
-    await auth.ensureValid();
-
-    expect(globalThis.fetch).not.toHaveBeenCalled();
-    expect(persist).not.toHaveBeenCalled();
-  });
-
-  // 6. concurrent 401s for same auth generation: one underlying auth transition
-  it('concurrent 401s for same generation trigger one reauthenticate', async () => {
+  // 5. ensureValid with valid tokens overlapping reauthenticate: no extra transition
+  it('ensureValid awaits in-flight reauthenticate then fast-paths on valid tokens', async () => {
     const tokens = makeTokens({ jwtExpiresAt: Date.now() + 3_600_000 });
     const creds = makeCreds();
     const { auth } = makeAuthManager({ tokens, creds });
 
     const fetchCalls: string[] = [];
+    const reauthBlocking = new Promise<void>((r) => setTimeout(r, 30));
+
     globalThis.fetch = vi.fn(async (url: string | URL) => {
       fetchCalls.push(String(url));
-      return makeMockResponse(mockAuthInfoResponse({ jwt: 'jwt-reauth' }));
+      await reauthBlocking;
+      return makeMockResponse(mockAuthInfoResponse({ jwt: 'jwt-reauth-first' }));
     }) as any;
 
     const gen = auth.currentAuthGeneration;
+    // Start reauthenticate (will block until we resolve)
+    const reauthP = auth.reauthenticateIfCurrent(gen);
+    // Give it a tick to enter the lock
+    await new Promise((r) => setTimeout(r, 10));
+    // ensureValid should await the in-flight reauth, then fast-path
+    await Promise.all([reauthP, auth.ensureValid()]);
+
+    // Only one login call from reauthenticate; ensureValid fast-pathed
+    expect(fetchCalls.filter((u) => u.includes('/customers/login'))).toHaveLength(1);
+    expect(auth.currentTokens?.jwt).toBe('jwt-reauth-first');
+  });
+
+  // 6. concurrent 401s via authedFetch: one underlying auth transition
+  it('concurrent authedFetch 401s trigger one reauthentication', async () => {
+    const tokens = makeTokens({ jwtExpiresAt: Date.now() + 3_600_000 });
+    const creds = makeCreds();
+    const { client } = makeClient({ tokens, creds });
+
+    let authFetchCount = 0;
+    globalThis.fetch = vi.fn(async (url: string | URL) => {
+      const u = String(url);
+      if (u.includes('/customers/login')) {
+        return makeMockResponse(mockAuthInfoResponse({ jwt: 'jwt-reauth' }));
+      }
+      // Data endpoint: 401 on first call, 200 on retry
+      authFetchCount++;
+      if (authFetchCount <= 2) {
+        return makeMockResponse({ message: 'unauthorized' }, { status: 401 });
+      }
+      return makeMockResponse({ data: 'ok' });
+    }) as any;
+
+    // Two concurrent authedFetch calls that both get 401
     await Promise.all([
-      auth.reauthenticateIfCurrent(gen),
-      auth.reauthenticateIfCurrent(gen),
+      client.authedFetch('/some/path'),
+      client.authedFetch('/some/path'),
     ]);
 
-    // Only one login call should have happened
-    expect(fetchCalls.filter((u) => u.includes('/customers/login'))).toHaveLength(1);
-    expect(auth.currentTokens?.jwt).toBe('jwt-reauth');
+    // Only one login call
+    const fetchCalls = (globalThis.fetch as any).mock.calls.map((c: any[]) => String(c[0]));
+    expect(fetchCalls.filter((u: string) => u.includes('/customers/login'))).toHaveLength(1);
   });
 
   // 7. refresh-to-reauth overlap: ensureValid triggers refresh, fails, one fallback login; reauthenticate joins
@@ -301,7 +328,6 @@ describe('AuthManager concurrency', () => {
       auth.reauthenticateIfCurrent(gen),
     ]);
 
-    // Should have done one refresh (failed) + one login (success)
     expect(fetchCalls.filter((u) => u.includes('/auth/refresh'))).toHaveLength(1);
     expect(fetchCalls.filter((u) => u.includes('/customers/login'))).toHaveLength(1);
     expect(auth.currentTokens?.jwt).toBe('jwt-overlap');
@@ -320,12 +346,9 @@ describe('AuthManager concurrency', () => {
     }) as any;
 
     const gen = auth.currentAuthGeneration;
-    // Start reauthenticate first
     const reauthP = auth.reauthenticateIfCurrent(gen);
-    // ensureValid should wait for it, then fast-path (tokens valid now)
     await Promise.all([reauthP, auth.ensureValid()]);
 
-    // Only one login call from reauthenticate
     expect(fetchCalls.filter((u) => u.includes('/customers/login'))).toHaveLength(1);
     expect(auth.currentTokens?.jwt).toBe('jwt-reauth-first');
   });
@@ -341,7 +364,6 @@ describe('AuthManager concurrency', () => {
     globalThis.fetch = vi.fn(async (url: string | URL) => {
       activeCount++;
       maxActive = Math.max(maxActive, activeCount);
-      // Small delay to increase chance of overlap
       await new Promise((r) => setTimeout(r, 50));
       activeCount--;
       const u = String(url);
@@ -362,25 +384,33 @@ describe('AuthManager concurrency', () => {
     expect(maxActive).toBe(1);
   });
 
-  // 10. assert retry sends rotated JWT (new auth generation)
-  it('retry after reauth uses rotated JWT from new generation', async () => {
+  // 10. assert retry via authedFetch sends rotated JWT
+  it('authedFetch retry after 401 carries rotated JWT', async () => {
     const tokens = makeTokens({ jwt: 'jwt-original', jwtExpiresAt: Date.now() + 3_600_000 });
     const creds = makeCreds();
-    const { auth } = makeAuthManager({ tokens, creds });
+    const { client, auth } = makeClient({ tokens, creds });
 
-    globalThis.fetch = vi.fn(async (url: string | URL) => {
-      if (String(url).includes('/customers/login')) {
-        const res = makeMockResponse(mockAuthInfoResponse({ jwt: 'jwt-rotated' }));
-        return res;
+    const authHeadersSeen: string[] = [];
+    globalThis.fetch = vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const u = String(url);
+      if (u.includes('/customers/login')) {
+        return makeMockResponse(mockAuthInfoResponse({ jwt: 'jwt-rotated' }));
       }
-      return makeMockResponse({});
+      // Capture the Authorization header on each data request
+      const headers = init?.headers as Record<string, string>;
+      if (headers?.authorization) authHeadersSeen.push(headers.authorization);
+      // First data call: 401. Second: 200.
+      if (authHeadersSeen.length === 1) {
+        return makeMockResponse({ message: 'unauthorized' }, { status: 401 });
+      }
+      return makeMockResponse({ data: 'ok' });
     }) as any;
 
-    expect(auth.authHeaders()['authorization']).toBe('Bearer jwt-original');
+    await client.authedFetch('/some/path');
 
-    await auth.reauthenticateIfCurrent(auth.currentAuthGeneration);
-
-    expect(auth.authHeaders()['authorization']).toBe('Bearer jwt-rotated');
+    // First attempt used original JWT, retry used rotated JWT
+    expect(authHeadersSeen).toContain('Bearer jwt-original');
+    expect(authHeadersSeen).toContain('Bearer jwt-rotated');
     expect(auth.currentAuthGeneration).toBeGreaterThan(0);
   });
 
@@ -399,11 +429,9 @@ describe('AuthManager concurrency', () => {
         }
         return makeMockResponse(mockRefreshResponse({ jwt: 'jwt-recovered' }));
       }
-      // Login also fails on first pass
       return makeMockResponse({ message: 'login fail' }, { status: 401 });
     }) as any;
 
-    // Three concurrent ensureValid calls should all reject
     const results = await Promise.allSettled([
       auth.ensureValid(),
       auth.ensureValid(),
@@ -411,51 +439,57 @@ describe('AuthManager concurrency', () => {
     ]);
     expect(results.every((r) => r.status === 'rejected')).toBe(true);
 
-    // Now fix refresh and retry
     refreshFail = false;
     await auth.ensureValid();
     expect(auth.currentTokens?.jwt).toBe('jwt-recovered');
   });
 
   // 12. waiter test: refreshed tokens remain inside skew, generation check returns (no infinite loop)
-  it('refreshed tokens within skew: ensureValid returns without infinite loop', async () => {
-    // Tokens near expiry but will be refreshed to far-future expiry
+  it('refreshed tokens within skew: generation check prevents infinite loop', async () => {
+    // Tokens near expiry so ensureValid triggers a refresh.
+    // The refresh returns max_age: 1 (1s), so the refreshed tokens are STILL within REFRESH_SKEW_MS.
+    // The generation check (authGeneration !== generationAtEntry) must break the loop
+    // after the refresh completes, preventing an infinite refresh cycle.
     const tokens = makeTokens({ jwtExpiresAt: Date.now() + 10_000 });
     const { auth, persist } = makeAuthManager({ tokens });
 
-    let refreshCalled = false;
+    let refreshCallCount = 0;
     globalThis.fetch = vi.fn(async (url: string | URL) => {
-      if (String(url).includes('/auth/refresh')) {
-        refreshCalled = true;
-        return makeMockResponse(mockRefreshResponse({
-          jwt: 'jwt-fresh',
-          jwtExpiresAt: Date.now() + 3_600_000,
-        }));
+      const u = String(url);
+      if (u.includes('/auth/refresh')) {
+        refreshCallCount++;
+        const t = makeTokens({ jwt: 'jwt-fresh' });
+        return makeMockResponse({
+          auth_info: {
+            jwt: t.jwt,
+            id_token: t.idToken,
+            refresh_token: t.refreshToken,
+            csrf_token: t.csrfToken,
+            tracking_id: t.trackingId,
+            customer_id: t.customerId,
+            did: t.did,
+            max_age: 1,  // 1 second — still within REFRESH_SKEW_MS (60s)
+          },
+        });
       }
       return makeMockResponse({});
     }) as any;
 
+    // Single ensureValid call: triggers refresh, generation changes, loop exits
+    // even though tokens are still within skew. Without the generation check,
+    // the loop would keep refreshing forever.
     await auth.ensureValid();
 
-    expect(refreshCalled).toBe(true);
+    expect(refreshCallCount).toBe(1);
     expect(auth.currentTokens?.jwt).toBe('jwt-fresh');
     expect(persist).toHaveBeenCalledTimes(1);
-
-    // Second call should NOT trigger another refresh (tokens are valid, generation changed)
-    refreshCalled = false;
-    await auth.ensureValid();
-    expect(refreshCalled).toBe(false);
   });
 
-  // 13. combined Set-Cookie with Expires date containing comma
-  it('extractCfBmCookie parses __cf_bm from combined Set-Cookie with Expires date', () => {
-    const raw = '__cf_bm=abc123; Path=/; Domain=takealot.com; Expires=Thu, 13 Aug 2026 12:00:00 GMT; HttpOnly; Secure, other_cookie=xyz; Path=/';
-    const headers = new Headers();
-    headers.append('set-cookie', raw);
-
-    const res = {
-      headers,
-    } as unknown as Response;
+  // 13. combined Set-Cookie with Expires date containing comma (fallback path)
+  it('extractCfBmCookie parses __cf_bm from combined Set-Cookie with Expires date via fallback', () => {
+    // __cf_bm is NOT first; another cookie with Expires=Thu, 13 Aug 2026 comes before it
+    const raw = 'other_cookie=xyz; Path=/; Expires=Thu, 13 Aug 2026 12:00:00 GMT; HttpOnly, __cf_bm=abc123; Path=/; Domain=takealot.com; HttpOnly; Secure';
+    const res = makeMockResponseNoSetCookie({}, { setCookieRaw: raw });
 
     const result = extractCfBmCookie(res);
     expect(result).toBe('__cf_bm=abc123');

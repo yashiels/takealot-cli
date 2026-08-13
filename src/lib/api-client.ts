@@ -3,7 +3,7 @@
  *
  * Two transports, both MITM-verified:
  *   - Unauthenticated SEARCH uses the desktop search endpoint + a browser UA,
- *     which returns rich product results and isn't blocked by Cloudflare.
+ *     which returns rich product results without requiring authentication.
  *   - Everything authenticated (cart, orders, cards, checkout) uses the mobile
  *     API and User-Agent for authenticated calls; 2FA flow requires __cf_bm cookie.
  *
