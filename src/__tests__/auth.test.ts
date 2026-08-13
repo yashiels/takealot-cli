@@ -91,7 +91,6 @@ function makeMockResponseNoSetCookie(body: unknown, opts: { status?: number; set
   if (opts.setCookieRaw) {
     headers.set('set-cookie', opts.setCookieRaw);
   }
-  // No getSetCookie() on this headers object — forces fallback path
   return {
     ok,
     status,
@@ -99,6 +98,7 @@ function makeMockResponseNoSetCookie(body: unknown, opts: { status?: number; set
     headers,
     json: async () => body,
     text: async () => JSON.stringify(body),
+    getSetCookie: undefined,
   } as unknown as Response;
 }
 
@@ -247,30 +247,42 @@ describe('AuthManager concurrency', () => {
     expect(auth.currentTokens?.jwt).toBe('jwt-login');
   });
 
-  // 5. ensureValid with valid tokens overlapping reauthenticate: no extra transition
-  it('ensureValid awaits in-flight reauthenticate then fast-paths on valid tokens', async () => {
+  // 5. ensureValid awaits in-flight reauthenticate, does not fast-path past it
+  it('ensureValid awaits in-flight reauthenticate then returns after it completes', async () => {
     const tokens = makeTokens({ jwtExpiresAt: Date.now() + 3_600_000 });
     const creds = makeCreds();
     const { auth } = makeAuthManager({ tokens, creds });
 
     const fetchCalls: string[] = [];
-    const reauthBlocking = new Promise<void>((r) => setTimeout(r, 30));
+    let resolveLogin: () => void;
+    const loginBlocking = new Promise<void>((r) => { resolveLogin = r; });
 
     globalThis.fetch = vi.fn(async (url: string | URL) => {
       fetchCalls.push(String(url));
-      await reauthBlocking;
+      await loginBlocking;  // Block until we release
       return makeMockResponse(mockAuthInfoResponse({ jwt: 'jwt-reauth-first' }));
     }) as any;
 
     const gen = auth.currentAuthGeneration;
-    // Start reauthenticate (will block until we resolve)
+    // Start reauthenticate — it will enter the lock and block on fetch
     const reauthP = auth.reauthenticateIfCurrent(gen);
     // Give it a tick to enter the lock
     await new Promise((r) => setTimeout(r, 10));
-    // ensureValid should await the in-flight reauth, then fast-path
-    await Promise.all([reauthP, auth.ensureValid()]);
 
-    // Only one login call from reauthenticate; ensureValid fast-pathed
+    // Start ensureValid — it should NOT return immediately (tokens are valid but
+    // authInFlight is set). It should be pending, waiting for the in-flight reauth.
+    let ensureValidResolved = false;
+    const ensureValidP = auth.ensureValid().then(() => { ensureValidResolved = true; });
+
+    // Give it a tick — ensureValid should still be pending
+    await new Promise((r) => setTimeout(r, 10));
+    expect(ensureValidResolved).toBe(false);
+
+    // Release the login — both should complete
+    resolveLogin!();
+    await Promise.all([reauthP, ensureValidP]);
+
+    // Only one login call from reauthenticate; ensureValid awaited it then returned
     expect(fetchCalls.filter((u) => u.includes('/customers/login'))).toHaveLength(1);
     expect(auth.currentTokens?.jwt).toBe('jwt-reauth-first');
   });

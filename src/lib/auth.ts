@@ -329,25 +329,26 @@ export class AuthManager {
     const generationAtEntry = this.authGeneration;
 
     while (true) {
-      // Fast path: tokens valid OR a transition completed since we entered
-      if (
-        this.tokens &&
-        (Date.now() < this.tokens.jwtExpiresAt - REFRESH_SKEW_MS ||
-          this.authGeneration !== generationAtEntry)
-      ) {
-        return;
-      }
+      // If a transition completed since we entered, we're done
+      if (this.authGeneration !== generationAtEntry) return;
       // If a transition is in flight, await it then loop back to recheck
       if (this.authInFlight) {
         await this.authInFlight;
         continue;
+      }
+      // Fast path: tokens valid and no transition needed
+      if (
+        this.tokens &&
+        Date.now() < this.tokens.jwtExpiresAt - REFRESH_SKEW_MS
+      ) {
+        return;
       }
       // Start a new transition
       this.authInFlight = this.doEnsureValid()
         .finally(() => { this.authInFlight = null; });
       await this.authInFlight;
       // If doEnsureValid threw, the await rejects and the error propagates
-      // If it succeeded, generation changed and the fast path will return
+      // If it succeeded, generation changed and the loop will return
     }
   }
 
