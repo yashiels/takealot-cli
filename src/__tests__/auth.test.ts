@@ -91,6 +91,8 @@ function makeMockResponseNoSetCookie(body: unknown, opts: { status?: number; set
   if (opts.setCookieRaw) {
     headers.set('set-cookie', opts.setCookieRaw);
   }
+  // Shadow getSetCookie on the Headers object to force the regex fallback path
+  Object.defineProperty(headers, 'getSetCookie', { value: undefined });
   return {
     ok,
     status,
@@ -98,7 +100,6 @@ function makeMockResponseNoSetCookie(body: unknown, opts: { status?: number; set
     headers,
     json: async () => body,
     text: async () => JSON.stringify(body),
-    getSetCookie: undefined,
   } as unknown as Response;
 }
 
