@@ -7,6 +7,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Two-step (OTP / 2FA) login — `loginWithOtp()` detects the `two_step_verification: "enabled_untrusted"` response, captures the `__cf_bm` Cloudflare cookie, and submits it with the OTP in a second request
+- Concurrency-safe token renewal and stale-401 handling
+
+### Fixed
+
+- Detect Takealot's OTP `cooldown` (HTTP 400 with `otp_status.status === "cooldown"`) and print a clear message instead of prompting for an OTP that will never arrive
+
 ## [0.1.0] — 2026-06-08
 
 ### Added

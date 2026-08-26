@@ -245,6 +245,23 @@ export class AuthManager {
 
     this.opts.log(`auth: 2FA required (${twoStepVerification})`);
 
+    // If the OTP retry budget is exhausted, Takealot returns HTTP 400 with
+    // otp_status.status === 'cooldown' and sends NO new SMS. Detect this up
+    // front and surface a clear message instead of prompting for an OTP that
+    // will never arrive (which previously surfaced as "Login failed (HTTP 400):
+    // Bad Request" on the pre-OTP single-step path).
+    const otpStatus = (data as any)?.otp_status as
+      | { status?: string; cooldown_end_timestamp?: string }
+      | undefined;
+    if (otpStatus?.status === 'cooldown') {
+      const until = otpStatus.cooldown_end_timestamp
+        ? ` Try again after ${otpStatus.cooldown_end_timestamp}.`
+        : '';
+      throw new Error(
+        `Two-step verification is in cooldown — too many OTP attempts and no new code was sent.${until}`,
+      );
+    }
+
     // The __cf_bm cookie is required for the second request
     if (!cfBmCookie) {
       throw new Error(
