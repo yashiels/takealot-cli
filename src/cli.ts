@@ -18,7 +18,7 @@ import { preferencesRefresh, preferencesShow } from './commands/preferences.js';
 import { configShow } from './commands/config.js';
 import { loginCommand } from './commands/login.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.2.0';
 
 /** Add the two global flags to a command so they parse in any position. */
 function withGlobals(cmd: Command): Command {
