@@ -38,6 +38,16 @@ export const DEFAULTS = {
 
 const ORIGIN = 'https://www.takealot.com';
 
+/**
+ * Canonical Takealot product-detail URL. The web + app both resolve
+ * `www.takealot.com/<slug>/PLID<id>` (the app registers exactly this as its
+ * PLID deep link); a slug-less `/PLID<id>` also redirects, so we fall back to
+ * that when the API omits a slug (e.g. cart / order items).
+ */
+export function productUrl(productId: number, slug?: string): string {
+  return slug ? `${ORIGIN}/${slug}/PLID${productId}` : `${ORIGIN}/PLID${productId}`;
+}
+
 export interface ClientLogger {
   debug(msg: string): void;
 }
@@ -54,11 +64,34 @@ export interface ClientOptions {
   preferredBrands?: string[];
 }
 
-/** Convert an API money value (cents) to Rand. Returns 0 for missing values. */
-function centsToRand(value: unknown): number {
+/**
+ * Coerce an API money value to a Rand number. The Takealot mobile API already
+ * returns Rand (e.g. unit_price 102 == R102, cart total 833 == R833) — it does
+ * NOT use cents — so this is a plain numeric coercion. The old implementation
+ * divided by 100, rendering every price 100× too small (R102 → "R1.02").
+ */
+function toRand(value: unknown): number {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
-  return n / 100;
+  return n;
+}
+
+/** Extract the numeric id from a "PLID12345" string (or undefined). */
+function plidToId(plid: unknown): number | undefined {
+  const m = String(plid ?? '').match(/(\d+)/);
+  return m ? Number(m[1]) : undefined;
+}
+
+/**
+ * Derive a human status from an order. The orders API has no `status` field;
+ * it exposes booleans (is_fully_cancelled, is_awaiting_payment, is_authorized)
+ * instead, so the old `order.status ?? order.order_status` was always undefined.
+ */
+function orderStatus(order: any): string | undefined {
+  if (order?.is_fully_cancelled) return 'Cancelled';
+  if (order?.is_awaiting_payment) return 'Awaiting payment';
+  if (order?.is_authorized || order?.auth_status === 'authorized') return 'Paid';
+  return undefined;
 }
 
 export class TakealotClient {
@@ -185,7 +218,10 @@ export class TakealotClient {
     }
     const data: any = await res.json();
     const results: any[] = data?.sections?.products?.results ?? [];
-    const total: number = data?.sections?.products?.total ?? 0;
+    // Real total lives in paging.total_num_found; the old `.total` path never
+    // existed, so every search reported "0 results".
+    const total: number =
+      data?.sections?.products?.paging?.total_num_found ?? results.length;
 
     const products = results
       .slice(0, limit)
@@ -200,23 +236,30 @@ export class TakealotClient {
     const bb = pv?.buybox_summary ?? {};
     const core = pv?.core ?? {};
 
-    const productId: number | null = bb?.product_id ?? core?.id ?? null;
+    // core.id is the PLID (the product-listing id used in links + product-card
+    // API); buybox_summary.product_id is the buyable/SKU id used for add-to-cart.
+    // They are DIFFERENT numbers — /PLID{bb.product_id} 404s, /PLID{core.id} 200s.
+    const productId: number | null = core?.id ?? bb?.product_id ?? null;
     if (!productId) return null;
+    const skuId: number | undefined = bb?.product_id ?? core?.id ?? undefined;
 
     return {
       productId,
+      skuId,
+      url: productUrl(productId, core?.slug),
       title: core?.title || pv?.title || '',
       brand: core?.brand || undefined,
       price: Array.isArray(bb?.prices) && bb.prices.length ? bb.prices[0] : 0,
       prettyPrice: bb?.pretty_price || '',
       inStock: this.isInStock(bb, pv),
       delivery:
-        pv?.stock_availability_summary?.delivery_date ||
         pv?.stock_availability_summary?.estimated_delivery?.estimated_dates ||
+        pv?.stock_availability_summary?.delivery_date ||
         '',
       rating: core?.star_rating || 0,
-      reviewCount: core?.review_count || 0,
-      saving: bb?.discount_percentage ? `${bb.discount_percentage}%` : undefined,
+      reviewCount: core?.reviews ?? pv?.review_summary?.review_count ?? 0,
+      // Already a formatted string like "23%" — do not append another %.
+      saving: bb?.saving || undefined,
     };
   }
 
@@ -247,17 +290,33 @@ export class TakealotClient {
   async getCart(): Promise<CartResult> {
     const customerId = this.requireCustomerId();
     const data = await this.authedJson(`/customers/${customerId}/cart`);
-    const raw: any[] = data?.products ?? data?.cart_items ?? data?.cart?.items ?? [];
-    const items: CartItem[] = raw.map((p) => ({
-      productId: p.product_id ?? p.id,
-      title: p.title ?? '',
-      quantity: p.quantity ?? 1,
-      price: centsToRand(p.selling_price ?? p.price ?? p.unit_price),
-    }));
+    // The cart response carries two parallel arrays keyed by product_id:
+    //   products[]   → title, plid (the PLID), selling_price (unit, in Rand)
+    //   cart_items[] → quantity, sub_total (line total), allocations[].unit_price
+    // Neither alone is enough, so join them on product_id.
+    const products: any[] = data?.products ?? [];
+    const cartItems: any[] = data?.cart_items ?? data?.cart?.items ?? [];
+    const qtyById = new Map<number, any>();
+    for (const ci of cartItems) qtyById.set(ci.product_id ?? ci.id, ci);
+
+    const items: CartItem[] = products.map((p) => {
+      const skuId = p.product_id ?? p.id;
+      const ci = qtyById.get(skuId) ?? {};
+      const plid = plidToId(p.plid);
+      return {
+        productId: plid ?? skuId, // PLID for display/link; sku id as fallback
+        skuId, // buyable id — used for cart add/remove
+        url: productUrl(plid ?? skuId, p.slug),
+        title: p.title ?? '',
+        quantity: ci.quantity ?? 1,
+        price: toRand(p.selling_price ?? p.web_selling_price ?? p.price),
+      };
+    });
+    // Prefer the server-computed cart total; fall back to summing line totals.
     const total =
-      data?.total_amount !== undefined
-        ? centsToRand(data.total_amount)
-        : items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      toRand(data?.cart_summary?.total?.value ?? data?.total ?? data?.sub_total) ||
+      cartItems.reduce((sum, ci) => sum + toRand(ci.sub_total), 0) ||
+      items.reduce((sum, i) => sum + i.price * i.quantity, 0);
     return { items, total };
   }
 
@@ -283,7 +342,8 @@ export class TakealotClient {
     const match = this.pickPreferred(products);
     if (!match) throw new Error(`No valid product found for "${query}"`);
 
-    const res = await this.addToCart(match.product.productId, quantity);
+    // Add-to-cart expects the buyable/SKU id, not the PLID.
+    const res = await this.addToCart(match.product.skuId ?? match.product.productId, quantity);
     return { ...res, title: res.title ?? match.product.title, match };
   }
 
@@ -295,7 +355,7 @@ export class TakealotClient {
     // Takealot expects a DELETE on /cart/items with a JSON body listing ids.
     const res = await this.authedFetch(`/customers/${customerId}/cart/items`, {
       method: 'DELETE',
-      body: JSON.stringify({ products: cart.items.map((i) => ({ id: i.productId })) }),
+      body: JSON.stringify({ products: cart.items.map((i) => ({ id: i.skuId ?? i.productId })) }),
     });
     if (!res.ok) {
       const txt = await res.text().catch(() => '');
@@ -323,22 +383,28 @@ export class TakealotClient {
         const items: OrderItem[] = [];
         for (const c of order.consignments ?? []) {
           for (const item of c.order_items ?? []) {
+            // The PLID lives in sku.plid ("PLID91974312"); product_id / sku_id
+            // is the buyable SKU id (404s as a PLID).
+            const skuId = item.product_id ?? item?.sku?.sku_id ?? 0;
+            const plid = plidToId(item?.sku?.plid) ?? skuId;
             items.push({
               orderId: order.order_id,
               orderDate: order.order_date,
-              productId: item.product_id ?? item?.sku?.sku_id ?? 0,
+              productId: plid,
+              skuId,
+              url: productUrl(plid, item.slug ?? item?.sku?.slug),
               title: item.title ?? item?.sku?.title ?? '',
               brand: item.brand || undefined,
               quantity: item.quantity || 1,
-              unitPrice: centsToRand(item.unit_price),
+              unitPrice: toRand(item.unit_price),
             });
           }
         }
         summaries.push({
           orderId: order.order_id,
           orderDate: order.order_date,
-          status: order.status ?? order.order_status,
-          total: order.total_amount !== undefined ? centsToRand(order.total_amount) : undefined,
+          status: orderStatus(order),
+          total: order.total_amount !== undefined ? toRand(order.total_amount) : undefined,
           items,
         });
       }

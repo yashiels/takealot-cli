@@ -33,7 +33,7 @@ export async function searchCommand(
         if (p.brand) meta.push(c.dim(p.brand));
         if (p.saving) meta.push(c.green(`-${p.saving}`));
         process.stdout.write(`   ${meta.join('  ')}\n`);
-        process.stdout.write(`   ${c.gray(`id ${p.productId}`)}\n\n`);
+        process.stdout.write(`   ${c.gray(`id ${p.productId}`)}  ${c.blue(p.url)}\n\n`);
       });
     },
     { query, total, products },

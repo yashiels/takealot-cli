@@ -29,7 +29,7 @@ export async function cartShow(ctx: Context): Promise<void> {
       cart.items.forEach((item, i) => {
         process.stdout.write(`${c.dim(`${i + 1}.`)} ${item.title}\n`);
         process.stdout.write(
-          `   ${c.cyan(`${item.quantity} × ${rand(item.price)}`)}  ${c.gray(`id ${item.productId}`)}\n`,
+          `   ${c.cyan(`${item.quantity} × ${rand(item.price)}`)}  ${c.gray(`id ${item.productId}`)}  ${c.blue(item.url)}\n`,
         );
       });
       process.stdout.write(`\n${c.bold(`Total: ${rand(cart.total)}`)}\n`);

@@ -47,7 +47,7 @@ export async function ordersShow(ctx: Context, orderId: string): Promise<void> {
       order.items.forEach((it) => {
         const brand = it.brand ? ` ${c.dim(it.brand)}` : '';
         process.stdout.write(`  • ${it.quantity} × ${it.title}${brand}  ${c.cyan(rand(it.unitPrice))}\n`);
-        process.stdout.write(`    ${c.gray(`id ${it.productId}`)}\n`);
+        process.stdout.write(`    ${c.gray(`id ${it.productId}`)}  ${c.blue(it.url)}\n`);
       });
       if (order.total !== undefined) {
         process.stdout.write(`\n  ${c.bold(`Total: ${rand(order.total)}`)}\n`);

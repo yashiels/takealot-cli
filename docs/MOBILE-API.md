@@ -88,6 +88,16 @@ GET /searches/layout,products,facets,filters,sort_options,product_count,suggeste
 GET /search/trending?platform=android&limit=10
 ```
 
+**Search response shape** (`sections.products`):
+- Result count is `sections.products.paging.total_num_found` (NOT `sections.products.total`, which does not exist).
+- Each result: `product_views.{core, buybox_summary}`.
+  - `core.id` — the **PLID** (used in `/PLID{id}` links and product-card). Build a link as `www.takealot.com/{core.slug}/PLID{core.id}`.
+  - `buybox_summary.product_id` — the **buyable/SKU id** (what add-to-cart wants). It is a *different* number from `core.id`; `/PLID{buybox.product_id}` 404s.
+  - Prices (`buybox_summary.prices[]`, `pretty_price`) are in **Rand**.
+  - `core.reviews` — review count (there is no `core.review_count`). `core.star_rating` — rating.
+  - `buybox_summary.saving` — pre-formatted discount string (e.g. `"23%"`); no `discount_percentage` field exists.
+  - Stock: `product_views.stock_availability_summary.status` / `.is_in_stock`; delivery text at `.estimated_delivery.estimated_dates`.
+
 ## Products
 
 ### Product Details
@@ -118,6 +128,10 @@ Content-Type: application/json
 GET /customers/{customer_id}/cart
 Authorization: Bearer {jwt}
 ```
+**Response:** carries two parallel arrays keyed by `product_id`, and neither alone is sufficient — **join them on `product_id`**:
+- `products[]` — `product_id` (SKU id), `plid` (`"PLID{n}"` string — the real PLID for links), `title`, `selling_price` (unit, in **Rand**), `original_price`.
+- `cart_items[]` — `product_id`, `quantity`, `sub_total` (line total, Rand), `allocations[].unit_price`.
+- Cart total: `cart_summary.total.value` (Rand). `total`/`sub_total` at the top level mirror it. There is no `total_amount`.
 
 ## Checkout
 
@@ -187,8 +201,14 @@ GET /customers/{customer_id}/summary
 
 ### Order History
 ```
-GET /customer/{customer_id}/orders?from=2025-11-01&to=2026-02-23&page_number=1&page_size=10
+GET /customer/{customer_id}/orders?period=all&page_number=0
 ```
+Also accepts `from`/`to`/`page_size`. Paging is **0-indexed**; iterate `page_number` until `response.orders` is empty.
+
+**Response:** orders are at `response.orders[]`. Each order:
+- Money (`total_amount`, `subtotal`, `unit_price`, `line_total`, …) is in **Rand**, not cents.
+- No `status` field — derive from booleans `is_fully_cancelled`, `is_awaiting_payment`, `is_authorized` / `auth_status`.
+- Line items: `consignments[].order_items[]`, each with `product_id` (SKU id), `unit_price`, `quantity`, and `sku.plid` (`"PLID{n}"` — the real PLID for links).
 
 ### Wishlists
 ```
@@ -202,6 +222,8 @@ GET /customers/{customer_id}/credits/balance
 
 ## Key Notes
 
+0. **All money values are in Rand, not cents** — do not divide by 100. (`unit_price: 102` == R102; cart total `833` == R833.)
+0b. **Two ids per product** — the **PLID** (`core.id` in search, `plid`/`sku.plid` in cart & orders) is for links and product-card/product-details; the **SKU id** (`buybox_summary.product_id` / cart & order `product_id`) is for add-to-cart. They are different numbers and are not interchangeable.
 1. **Authenticated requests use the mobile API and User-Agent; the 2FA handshake requires the __cf_bm cookie returned by the first login response**
 2. **Saved card tokens typically use frictionless 3DS, but issuer challenges may still occur**
 3. **JWT expires in 1 hour** — use refresh_token to get new jwt before expiry

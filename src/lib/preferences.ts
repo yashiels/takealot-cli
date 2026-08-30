@@ -53,9 +53,12 @@ export function findPreferredProduct(
 ): PreferenceMatch | null {
   if (!products.length) return null;
 
-  // 1) Exact product id from order history.
+  // 1) Exact product id from order history. Match on either the PLID or the
+  //    SKU id, since order history may key on either and they differ.
   const prevIds = new Set(history.map((p) => p.productId));
-  const exact = products.find((p) => prevIds.has(p.productId));
+  const exact = products.find(
+    (p) => prevIds.has(p.productId) || (p.skuId !== undefined && prevIds.has(p.skuId)),
+  );
   if (exact) return { product: exact, reason: 'order-history-product' };
 
   // 2) Brand from order history.

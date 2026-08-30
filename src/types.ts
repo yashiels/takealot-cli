@@ -59,7 +59,12 @@ export interface Config {
 // =====================
 
 export interface SearchProduct {
+  /** PLID — the product-listing id used in links and the product-card API. */
   productId: number;
+  /** Buyable/SKU id (buybox product_id) — the id add-to-cart expects. */
+  skuId?: number;
+  /** Canonical product-detail URL (www.takealot.com/<slug>/PLID<id>). */
+  url: string;
   title: string;
   brand?: string;
   price: number;
@@ -77,7 +82,12 @@ export interface SearchResult {
 }
 
 export interface CartItem {
+  /** PLID — for links/display. */
   productId: number;
+  /** Buyable/SKU id — used to add/remove the item from the cart. */
+  skuId?: number;
+  /** Canonical product-detail URL. */
+  url: string;
   title: string;
   quantity: number;
   /** Unit selling price in Rand (already converted from cents where needed). */
@@ -98,7 +108,12 @@ export interface AddToCartResult {
 export interface OrderItem {
   orderId: string;
   orderDate: string;
+  /** PLID — for links/display. */
   productId: number;
+  /** Buyable/SKU id (sku.sku_id). */
+  skuId?: number;
+  /** Canonical product-detail URL. */
+  url: string;
   title: string;
   brand?: string;
   quantity: number;

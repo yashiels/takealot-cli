@@ -80,8 +80,9 @@ async function initCheckout(client: TakealotClient, logger: Logger): Promise<str
 async function getAmountDue(client: TakealotClient, orderId: string): Promise<number | undefined> {
   try {
     const data = await getJson(client, `/checkout/order/${orderId}/payhost`);
-    const cents = data?.amount_due ?? data?.response?.amount_due ?? data?.total;
-    return cents !== undefined ? Number(cents) / 100 : undefined;
+    // The API returns Rand, not cents — do not divide by 100.
+    const amount = data?.amount_due ?? data?.response?.amount_due ?? data?.total;
+    return amount !== undefined ? Number(amount) : undefined;
   } catch {
     return undefined;
   }

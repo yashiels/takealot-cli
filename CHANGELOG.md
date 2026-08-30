@@ -11,10 +11,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Two-step (OTP / 2FA) login — `loginWithOtp()` detects the `two_step_verification: "enabled_untrusted"` response, captures the `__cf_bm` Cloudflare cookie, and submits it with the OTP in a second request
 - Concurrency-safe token renewal and stale-401 handling
+- Canonical product-detail links (`www.takealot.com/<slug>/PLID<id>`) on `search`, `cart`, and `orders` output and in `--json` (`url` field) (#19)
+- `skuId` on search/cart/order items — the buyable id used for add/remove-to-cart, kept distinct from the PLID (#19)
 
 ### Fixed
 
 - Detect Takealot's OTP `cooldown` (HTTP 400 with `otp_status.status === "cooldown"`) and print a clear message instead of prompting for an OTP that will never arrive
+- Search always reported "0 results" — now reads `paging.total_num_found` (#19)
+- Product links used the SKU id as the PLID and 404'd — now use the real PLID (`core.id` / `sku.plid` / cart `plid`) (#19)
+- Prices were 100× too small — the mobile API returns Rand, not cents; removed the erroneous `/100`, fixing cart, order, and checkout totals (#19)
+- Cart quantities and total were wrong — join the `products` and `cart_items` arrays and take the total from `cart_summary.total.value` (#19)
+- Search review counts (`core.reviews`) and saving badge (`buybox_summary.saving`) now populate (#19)
+- Order status now derived from the order's boolean flags instead of a nonexistent `status` field (#19)
 
 ## [0.1.0] — 2026-06-08
 
