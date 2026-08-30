@@ -112,7 +112,11 @@ jobs:
 
       - name: Commit version bump (verified, via GitHub API)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The default GITHUB_TOKEN is evaluated as the GitHub Actions
+          # integration, which cannot bypass the main-branch ruleset on a
+          # user-owned repo. Use a PAT owned by a bypass user instead so the
+          # verified version-bump commit can land on main.
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           BRANCH="${GITHUB_REF_NAME}"
