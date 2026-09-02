@@ -241,6 +241,17 @@ export class TakealotClient {
     return id;
   }
 
+  /**
+   * Ensure a usable session, then return the customer id. `ensureValid()`
+   * bootstraps a fresh login from stored credentials + the trusted device when
+   * no tokens are held yet (e.g. after a full token wipe), so an authed command
+   * self-heals instead of throwing "Not authenticated" before it can log in.
+   */
+  private async ensureCustomerId(): Promise<number> {
+    await this.auth.ensureValid();
+    return this.requireCustomerId();
+  }
+
   // =====================
   // Generic request core — every catalogue endpoint routes through here.
   // =====================
@@ -444,6 +455,9 @@ export class TakealotClient {
   ): Promise<unknown> {
     const row = endpoint(id);
     if (row.excluded) throw new Error(`endpoint ${id} is excluded: ${row.reason}`);
+    // Bootstrap a session first so an authed endpoint whose path needs
+    // {customerId} self-heals from a full token wipe (login via trusted device).
+    if (row.auth) await this.auth.ensureValid();
     const path = this.resolvePath(row, args.params ?? {});
     return this.apiRequest(row.method, path, {
       base: row.base,
@@ -584,7 +598,7 @@ export class TakealotClient {
   // =====================
 
   async getCart(): Promise<CartResult> {
-    const customerId = this.requireCustomerId();
+    const customerId = await this.ensureCustomerId();
     const data = await this.authedJson(`/customers/${customerId}/cart`);
     // The cart response carries two parallel arrays keyed by product_id:
     //   products[]   → title, plid (the PLID), selling_price (unit, in Rand)
@@ -617,7 +631,7 @@ export class TakealotClient {
   }
 
   async addToCart(productId: number, quantity = 1): Promise<AddToCartResult> {
-    const customerId = this.requireCustomerId();
+    const customerId = await this.ensureCustomerId();
     const data = await this.authedJson(`/customers/${customerId}/cart/items`, {
       method: 'POST',
       body: JSON.stringify({ products: [{ id: productId, quantity }] }),
@@ -662,7 +676,7 @@ export class TakealotClient {
 
   /** Update a cart line's quantity (PUT /cart/items). */
   async setCartItemQuantity(skuId: number, quantity: number): Promise<unknown> {
-    const customerId = this.requireCustomerId();
+    const customerId = await this.ensureCustomerId();
     return this.apiRequest('PUT', `/customers/${customerId}/cart/items`, {
       auth: true,
       encoding: 'json',
@@ -672,7 +686,7 @@ export class TakealotClient {
 
   /** Remove one cart line by its buyable SKU id (DELETE with body). */
   async removeCartItem(skuId: number): Promise<unknown> {
-    const customerId = this.requireCustomerId();
+    const customerId = await this.ensureCustomerId();
     return this.apiRequest('DELETE', `/customers/${customerId}/cart/items`, {
       auth: true,
       encoding: 'delete-body',
@@ -681,7 +695,7 @@ export class TakealotClient {
   }
 
   async clearCart(): Promise<{ removed: number }> {
-    const customerId = this.requireCustomerId();
+    const customerId = await this.ensureCustomerId();
     const cart = await this.getCart();
     if (!cart.items.length) return { removed: 0 };
 
@@ -702,7 +716,7 @@ export class TakealotClient {
   // =====================
 
   async fetchOrders(pages = 50, period = 'all'): Promise<OrderSummary[]> {
-    const customerId = this.requireCustomerId();
+    const customerId = await this.ensureCustomerId();
     const summaries: OrderSummary[] = [];
 
     for (let page = 0; page < pages; page++) {
