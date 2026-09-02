@@ -41,6 +41,12 @@ export async function configShow(ctx: Context): Promise<void> {
       }
     : null;
 
+  // Device: report the trust anchor's presence ONLY — never any did fragment.
+  const device = {
+    profile: creds?.device?.profile ?? null,
+    didPresent: Boolean(creds?.device?.did),
+  };
+
   const data = {
     configDir: configDir(),
     files: {
@@ -50,6 +56,7 @@ export async function configShow(ctx: Context): Promise<void> {
     },
     settings,
     credentials,
+    device,
     preferences: { count: prefs.length },
   };
 
@@ -82,6 +89,17 @@ export async function configShow(ctx: Context): Promise<void> {
             '\n',
         );
       }
+
+      process.stdout.write(`\n${c.bold('Device')}\n`);
+      if (device.profile) {
+        const p = device.profile;
+        process.stdout.write(
+          `  ${c.dim('profile')}        ${p.brand} ${p.model} · Android ${p.androidRelease} · app ${p.appVersion}\n`,
+        );
+      }
+      process.stdout.write(
+        `  ${c.dim('did')}            ${device.didPresent ? c.green('trusted') : c.gray('none yet')}\n`,
+      );
 
       process.stdout.write(`\n${c.bold('Preferences')}\n`);
       process.stdout.write(`  ${c.dim('products')}       ${prefs.length}\n`);

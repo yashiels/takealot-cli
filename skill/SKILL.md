@@ -32,13 +32,51 @@ The `login` command prompts for your Takealot account email and password interac
 
 ## Automated / agent usage
 
-First-time login requires an interactive terminal:
-- If your account has 2FA enabled, you'll be prompted for an OTP code sent to your phone. Token refresh works without interaction; full re-login on a 2FA account requires an interactive OTP prompt.
-- **Seed credentials once, interactively, on the machine:** run `takealot login` in a real terminal so `~/.config/takealot-cli/credentials.json` gets populated. After that, most calls work without interaction via token refresh.
-- **Never run `takealot login --reset` unattended.** It re-prompts for email/password and throws `--reset needs an interactive terminal` when there is no TTY. If credentials are wrong, ask the user to run `takealot login --reset` themselves.
-- **If no credentials are cached yet,** any authed command fails with `No saved credentials. Run 'takealot login' in an interactive terminal first.` — surface that to the user rather than retrying; an agent cannot complete first-time login unattended.
+The CLI is built for headless agents. Device trust rides on a server-assigned
+`did` the CLI persists and replays on every request (`TAL-Did` header + `did`
+cookie). **Once 2FA is completed a single time with device trust, later logins —
+including a full re-login after tokens are wiped — skip the OTP entirely**, so
+agents keep working unattended.
+
+**Credential injection (no interactive prompt):** set `TAKEALOT_EMAIL` +
+`TAKEALOT_PASSWORD` in the environment (these override any stored pair). This is
+op-sa / 1Password friendly:
+
+```bash
+TAKEALOT_EMAIL="$(op-sa read op://Agents/takealot/username)" \
+TAKEALOT_PASSWORD="$(op-sa read op://Agents/takealot/password)" \
+  takealot cart --json
+```
+
+**First-time / untrusted-device 2FA is a two-step, TTY-free handshake:**
+
+1. Trigger the challenge — the CLI sends the OTP to the user's phone and prints
+   the challenge to complete:
+   ```bash
+   takealot login --json
+   # → {"status":"otp_required","challenge":"<nonce>","otpSentTo":"…","expiresInSec":300}
+   ```
+   (exit 0). If the device is already trusted this instead prints
+   `{"status":"ok","customerId":…}` and you're done.
+2. Ask the user for the code they received, then complete it — the `--challenge`
+   nonce from step 1 is **required**:
+   ```bash
+   TAKEALOT_OTP=123456 TAKEALOT_CHALLENGE=<nonce> takealot login --json
+   # or: takealot login --otp 123456 --challenge <nonce> --json
+   ```
+   Prefer the env vars — `--otp` leaks via the process list / shell history.
+
+- Structured error codes under `--json`: `otp_required` (no live challenge — run
+  `takealot login` first), `otp_state_mismatch` (wrong/absent `--challenge`, or
+  account/device changed), `otp_expired` (re-run `takealot login`).
+- **Never run `takealot login --reset` unattended** — it re-prompts for
+  email/password and needs a TTY. Use env injection instead.
+- Multiple agents driving *different* accounts on one box must use separate
+  `XDG_CONFIG_HOME` dirs; same-account concurrent invocations are safe (writes are
+  serialized by a cross-process lock).
 - Search needs no login, so `takealot search … --json` always works.
-- For checkout, always dry-run first (`takealot checkout`) and only pass `--confirm --yes` when the user has explicitly approved the order and total.
+- For checkout, always dry-run first (`takealot checkout`) and only pass
+  `--confirm --yes` when the user has explicitly approved the order and total.
 
 ## Commands
 

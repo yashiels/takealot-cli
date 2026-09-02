@@ -11,12 +11,21 @@
  * persisted immediately via the injected `persist` callback.
  */
 
-import type { Credentials, TokenSet } from '../types.js';
+import type { Credentials, DeviceRecord, TokenSet } from '../types.js';
 
 /** Refresh the jwt this many ms before its stated expiry. */
 const REFRESH_SKEW_MS = 60_000;
 /** Default jwt lifetime when the server doesn't tell us (max_age: 3600). */
 const DEFAULT_JWT_TTL_MS = 3_600_000;
+
+/**
+ * The one serialized cross-process credentials transaction (see config.ts
+ * `withCredentials`). Hands the callback a fresh on-disk snapshot plus a
+ * `save(patch)` that field-merges and atomically writes it back.
+ */
+export type CredentialsTransaction = <T>(
+  fn: (snapshot: Credentials | null, save: (patch: Partial<Credentials>) => Credentials) => Promise<T>,
+) => Promise<T>;
 
 export interface AuthManagerOptions {
   apiBase: string;
@@ -24,12 +33,50 @@ export interface AuthManagerOptions {
   platform: string;
   /** Returns stored credentials for (re)login, or null if none saved. */
   getCredentials: () => Credentials | null;
-  /** Called whenever the token set changes so callers can persist it. */
-  persist: (tokens: TokenSet) => void;
+  /** Called (and awaited) whenever the token set changes so callers can persist it. */
+  persist: (tokens: TokenSet) => void | Promise<void>;
   log: (msg: string) => void;
   /** Optional OTP provider for 2FA. When set, ensureValid() and reauthenticateIfCurrent()
    *  use loginWithOtp() so re-login can complete 2FA challenges. */
   otpProvider?: () => Promise<string>;
+  /**
+   * Optional serialized credentials transaction. When provided, the refresh
+   * path runs inside it with reload-and-skip so two processes sharing one
+   * credentials file never invalidate each other's rotating refresh token —
+   * whichever refreshes first wins, the other adopts its result and skips the
+   * network. When absent (unit tests, in-process-only use) behaviour is
+   * unchanged.
+   */
+  transaction?: CredentialsTransaction;
+  /** Returns the current device record (server-assigned did + mocked profile). */
+  getDevice?: () => DeviceRecord | undefined;
+  /**
+   * Called (memory-only, never takes the credentials lock) when a `did` is
+   * captured from a response, so the caller can adopt it in-memory. Disk
+   * persistence happens through the normal persist / transaction save paths.
+   */
+  onDid?: (did: string) => void;
+}
+
+/** A 2FA challenge captured by `beginLogin`, replayed verbatim by `completeLogin`. */
+export interface OtpChallenge {
+  /** The Cloudflare `__cf_bm=...` cookie required by request-2. */
+  cfBm: string;
+  /** did captured from request-1 (replayed in request-2). */
+  did?: string;
+  /** Masked destination the OTP was sent to, if the server said. */
+  otpSentTo?: string;
+  /** Server validity window (otp_status.valid_millis), ms. */
+  validMs: number;
+}
+
+export type BeginLoginResult = { tokens: TokenSet } | { challenge: OtpChallenge };
+
+/** Same-account guard for reload-and-skip: an unknown acting account assumes the stored one. */
+function sameAccount(snapshot: Credentials | null, email: string | undefined): boolean {
+  if (!snapshot) return false;
+  if (!email) return true;
+  return !snapshot.email || snapshot.email.toLowerCase() === email.toLowerCase();
 }
 
 /** Pull a TokenSet out of a login/refresh response body. */
@@ -95,29 +142,48 @@ function loginBody(
   return { platform, sections };
 }
 
-/** Extract the __cf_bm cookie value from a fetch Response. */
-export function extractCfBmCookie(res: Response): string {
-  // Try getSetCookie() first (Node 18.14+)
+/**
+ * Extract a named cookie from a fetch Response's Set-Cookie header(s), returning
+ * `name=value` (or '' if absent). Handles both `getSetCookie()` (Node 18.14+)
+ * and the combined `set-cookie` header where Expires dates contain commas.
+ */
+export function extractSetCookie(res: Response, name: string): string {
+  const prefix = `${name}=`;
   const cookies = res.headers.getSetCookie?.() ?? [];
   for (const cookie of cookies) {
-    if (cookie.startsWith('__cf_bm=')) {
+    if (cookie.startsWith(prefix)) {
       const semi = cookie.indexOf(';');
       return semi > 0 ? cookie.substring(0, semi) : cookie;
     }
   }
-  // Fallback: parse Set-Cookie header manually with regex
   const raw = res.headers.get('set-cookie');
   if (raw) {
-    const match = raw.match(/(?:^|,\s*)__cf_bm=([^;,]*)/);
-    if (match && match[1]) return `__cf_bm=${match[1].trim()}`;
+    // Anchor on a cookie boundary (start or ", ") so an Expires date's comma
+    // (e.g. "Expires=Thu, 13 Aug 2026") is never mistaken for a boundary.
+    const re = new RegExp(`(?:^|,\\s*)${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;,]*)`);
+    const match = raw.match(re);
+    if (match && match[1]) return `${name}=${match[1].trim()}`;
   }
   return '';
+}
+
+/** The value of a named Set-Cookie (without the `name=`), or '' if absent. */
+export function cookieValue(res: Response, name: string): string {
+  const kv = extractSetCookie(res, name);
+  return kv ? kv.slice(name.length + 1) : '';
+}
+
+/** Backwards-compatible helper: the `__cf_bm=...` cookie from a 2FA challenge. */
+export function extractCfBmCookie(res: Response): string {
+  return extractSetCookie(res, '__cf_bm');
 }
 
 export class AuthManager {
   private tokens: TokenSet | null;
   private authGeneration = 0;
   private authInFlight: Promise<void> | null = null;
+  /** did captured this process — used immediately (e.g. OTP req1→req2) even before onDid propagates. */
+  private capturedDid?: string;
 
   constructor(
     private opts: AuthManagerOptions,
@@ -144,6 +210,39 @@ export class AuthManager {
     return this.tokens;
   }
 
+  /** The device id to present: persisted device did → did captured this run → token's. */
+  private currentDid(): string | undefined {
+    return this.opts.getDevice?.()?.did ?? this.capturedDid ?? this.tokens?.did;
+  }
+
+  /**
+   * `TAL-Did` header + `did` cookie fragment to attach to EVERY request — login,
+   * refresh, and authed calls alike — so the server recognises the (trusted)
+   * device and skips the 2FA challenge. `extraCookies` are merged into the single
+   * `cookie` header (e.g. the `__cf_bm` cookie during the OTP handshake).
+   */
+  deviceHeaders(extraCookies: string[] = []): Record<string, string> {
+    const did = this.currentDid();
+    const headers: Record<string, string> = {};
+    if (did) headers['tal-did'] = did;
+    const cookieParts = [...extraCookies.filter(Boolean)];
+    if (did) cookieParts.push(`did=${did}`);
+    if (cookieParts.length) headers['cookie'] = cookieParts.join('; ');
+    return headers;
+  }
+
+  /** Capture a server-assigned `did` from a response (Set-Cookie wins over body). */
+  private captureDid(res: Response, data: any): string | undefined {
+    const info = data?.auth_info ?? data?.response?.auth_info ?? data ?? {};
+    const did = cookieValue(res, 'did') || info?.did || data?.did || undefined;
+    if (did && did !== this.currentDid()) {
+      this.opts.log('auth: captured device did'); // never log any did fragment
+      this.capturedDid = did;
+      this.opts.onDid?.(did);
+    }
+    return did || undefined;
+  }
+
   /** Headers required for authenticated requests. */
   authHeaders(): Record<string, string> {
     const t = this.tokens;
@@ -152,7 +251,8 @@ export class AuthManager {
       authorization: `Bearer ${t.jwt}`,
     };
     if (t.csrfToken) headers['x-csrf-token'] = t.csrfToken;
-    if (t.did) headers['tal-did'] = t.did;
+    const did = this.currentDid();
+    if (did) headers['tal-did'] = did;
     const cookie = this.cookieHeader();
     if (cookie) headers['cookie'] = cookie;
     return headers;
@@ -166,15 +266,29 @@ export class AuthManager {
     if (t.idToken) parts.push(`taid=${t.idToken}`);
     parts.push(`tal_jwt=${t.jwt}`);
     if (t.csrfToken) parts.push(`tal_csrf=${t.csrfToken}`);
-    if (t.did) parts.push(`did=${t.did}`);
+    const did = this.currentDid();
+    if (did) parts.push(`did=${did}`);
     return parts.join('; ');
   }
 
-  private setTokens(tokens: TokenSet): TokenSet {
+  private async setTokens(tokens: TokenSet): Promise<TokenSet> {
     this.tokens = tokens;
     this.authGeneration++;
-    this.opts.persist(tokens);
+    // Persist is awaited (locked, cross-process safe in Context); never called
+    // from inside the credentials transaction, so it cannot self-deadlock.
+    await this.opts.persist(tokens);
     return tokens;
+  }
+
+  /** Adopt a token set into memory WITHOUT persisting (the transaction's save() writes). */
+  private adoptTokens(tokens: TokenSet): TokenSet {
+    this.tokens = tokens;
+    this.authGeneration++;
+    return tokens;
+  }
+
+  private isFresh(tokens: TokenSet): boolean {
+    return Date.now() < tokens.jwtExpiresAt - REFRESH_SKEW_MS;
   }
 
   /**
@@ -191,6 +305,7 @@ export class AuthManager {
         accept: 'application/json, */*',
         'content-type': 'application/json',
         'user-agent': this.opts.userAgent,
+        ...this.deviceHeaders(),
       },
       body: JSON.stringify(body),
     });
@@ -199,21 +314,18 @@ export class AuthManager {
     if (!res.ok && !(data as any)?.auth_info) {
       throw new Error(`Login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`);
     }
+    this.captureDid(res, data);
     return this.setTokens(parseAuthInfo(data));
   }
 
   /**
-   * Two-step login with OTP support. Sends email+password first, then detects
-   * whether Takealot requires two-step verification. If it does, calls the
-   * provided `otpPromise` to obtain the OTP and submits it in a second request
-   * that reuses the Cloudflare __cf_bm cookie from the first response.
+   * Request-1 of the two-step login: submit credentials (with the device's
+   * TAL-Did). Returns `{ tokens }` when the device is trusted / the account has
+   * no 2FA, or `{ challenge }` carrying the __cf_bm cookie and the request-1 did
+   * for a separate `completeLogin`. Captures + adopts the server did either way.
    */
-  async loginWithOtp(
-    email: string,
-    password: string,
-    otpPromise: () => Promise<string>,
-  ): Promise<TokenSet> {
-    this.opts.log('auth: login (with OTP support)');
+  async beginLogin(email: string, password: string): Promise<BeginLoginResult> {
+    this.opts.log('auth: login request-1');
     const body = loginBody(this.opts.platform, email, password);
 
     const res = await fetch(`${this.opts.apiBase}/customers/login`, {
@@ -222,6 +334,7 @@ export class AuthManager {
         accept: 'application/json, */*',
         'content-type': 'application/json',
         'user-agent': this.opts.userAgent,
+        ...this.deviceHeaders(),
       },
       body: JSON.stringify(body),
     });
@@ -231,27 +344,25 @@ export class AuthManager {
 
     const data = await res.json().catch(() => ({}));
 
-    // Check for two-step verification requirement (exact value match)
+    // A trusted device is recognised by its TAL-Did, so request-1 already carries
+    // the server's did — capture it before anything else.
+    const did = this.captureDid(res, data);
+
     const twoStepVerification = (data as any)?.two_step_verification as string | undefined;
     if (twoStepVerification !== 'enabled_untrusted') {
-      // Not a 2FA challenge — parse the response directly (backwards compatible)
       if (!res.ok && !(data as any)?.auth_info) {
         throw new Error(
           `Login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`,
         );
       }
-      return this.setTokens(parseAuthInfo(data));
+      return { tokens: await this.setTokens(parseAuthInfo(data)) };
     }
 
     this.opts.log(`auth: 2FA required (${twoStepVerification})`);
 
-    // If the OTP retry budget is exhausted, Takealot returns HTTP 400 with
-    // otp_status.status === 'cooldown' and sends NO new SMS. Detect this up
-    // front and surface a clear message instead of prompting for an OTP that
-    // will never arrive (which previously surfaced as "Login failed (HTTP 400):
-    // Bad Request" on the pre-OTP single-step path).
+    // Exhausted OTP budget → HTTP 400 with otp_status.status 'cooldown', no SMS.
     const otpStatus = (data as any)?.otp_status as
-      | { status?: string; cooldown_end_timestamp?: string }
+      | { status?: string; cooldown_end_timestamp?: string; valid_millis?: number }
       | undefined;
     if (otpStatus?.status === 'cooldown') {
       const until = otpStatus.cooldown_end_timestamp
@@ -262,50 +373,89 @@ export class AuthManager {
       );
     }
 
-    // The __cf_bm cookie is required for the second request
     if (!cfBmCookie) {
       throw new Error(
         'Two-step verification started, but the required __cf_bm cookie was not returned.',
       );
     }
 
-    // Get OTP from the caller
-    const otp = await otpPromise();
+    const otpSentTo =
+      (data as any)?.otp_sent_to ??
+      (data as any)?.otp_status?.destination ??
+      undefined;
+    return {
+      challenge: {
+        cfBm: cfBmCookie,
+        did,
+        otpSentTo,
+        validMs: typeof otpStatus?.valid_millis === 'number' ? otpStatus.valid_millis : 300_000,
+      },
+    };
+  }
+
+  /**
+   * Request-2 of the two-step login: submit creds + OTP + trust_this_device,
+   * replaying the exact `did` and `__cf_bm` from the challenge in ONE cookie
+   * header. Safe to call in a fresh process (nothing but the challenge is
+   * needed). Never re-fires request-1.
+   */
+  async completeLogin(
+    email: string,
+    password: string,
+    otp: string,
+    challenge: OtpChallenge,
+  ): Promise<TokenSet> {
     if (!otp || !/^\d+$/.test(otp)) {
       throw new Error('Invalid OTP: must be numeric digits only');
     }
+    // Ensure the challenge's did is what we present (this process may hold none).
+    if (challenge.did) this.capturedDid = challenge.did;
 
-    // Second request with both sections + __cf_bm cookie
     const otpBody = loginBody(this.opts.platform, email, password, otp, true);
-    const secondHeaders: Record<string, string> = {
+    const headers: Record<string, string> = {
       accept: 'application/json, */*',
       'content-type': 'application/json',
       'user-agent': this.opts.userAgent,
+      ...this.deviceHeaders(challenge.cfBm ? [challenge.cfBm] : []),
     };
-    if (cfBmCookie) {
-      secondHeaders['cookie'] = cfBmCookie;
-    }
 
-    this.opts.log('auth: submitting OTP');
-    const otpRes = await fetch(`${this.opts.apiBase}/customers/login`, {
+    this.opts.log('auth: submitting OTP (request-2)');
+    const res = await fetch(`${this.opts.apiBase}/customers/login`, {
       method: 'POST',
-      headers: secondHeaders,
+      headers,
       body: JSON.stringify(otpBody),
     });
 
-    const otpData = await otpRes.json().catch(() => ({}));
-    if (!otpRes.ok && !(otpData as any)?.auth_info) {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok && !(data as any)?.auth_info) {
       throw new Error(
-        `OTP login failed (HTTP ${otpRes.status}): ${(otpData as any)?.message ?? otpRes.statusText}`,
+        `OTP login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`,
       );
     }
+    this.captureDid(res, data);
     this.opts.log('auth: OTP accepted, login complete');
-    return this.setTokens(parseAuthInfo(otpData));
+    return this.setTokens(parseAuthInfo(data));
   }
 
-  async refresh(): Promise<TokenSet> {
-    const t = this.tokens;
-    if (!t?.refreshToken) throw new Error('No refresh token available');
+  /**
+   * Two-step login that resolves the OTP inline via `otpPromise` (interactive /
+   * background otpProvider path). A trusted device returns tokens without ever
+   * calling `otpPromise`.
+   */
+  async loginWithOtp(
+    email: string,
+    password: string,
+    otpPromise: () => Promise<string>,
+  ): Promise<TokenSet> {
+    const started = await this.beginLogin(email, password);
+    if ('tokens' in started) return started.tokens;
+    const otp = await otpPromise();
+    return this.completeLogin(email, password, otp, started.challenge);
+  }
+
+  /** Pure network refresh using the given base tokens; does not persist or adopt. */
+  private async refreshNetwork(base: TokenSet): Promise<{ tokens: TokenSet; did?: string }> {
+    if (!base.refreshToken) throw new Error('No refresh token available');
     this.opts.log('auth: refresh');
 
     const res = await fetch(`${this.opts.apiBase}/customers/auth/refresh`, {
@@ -314,12 +464,13 @@ export class AuthManager {
         accept: 'application/json, */*',
         'content-type': 'application/json',
         'user-agent': this.opts.userAgent,
-        authorization: `Bearer ${t.jwt}`,
+        authorization: `Bearer ${base.jwt}`,
+        ...this.deviceHeaders(),
       },
       body: JSON.stringify({
         platform: this.opts.platform,
-        refresh_token: t.refreshToken,
-        tracking_id: t.trackingId,
+        refresh_token: base.refreshToken,
+        tracking_id: base.trackingId,
       }),
     });
 
@@ -327,7 +478,63 @@ export class AuthManager {
     if (!res.ok && !(data as any)?.auth_info) {
       throw new Error(`Token refresh failed (HTTP ${res.status})`);
     }
-    return this.setTokens(parseAuthInfo(data));
+    const did = this.captureDid(res, data);
+    const tokens = parseAuthInfo(data);
+    // Keep the token's did in step with the device's (server may echo/rotate it).
+    if (did) tokens.did = did;
+    else if (this.currentDid()) tokens.did = this.currentDid();
+    return { tokens, did };
+  }
+
+  async refresh(): Promise<TokenSet> {
+    const t = this.tokens;
+    if (!t?.refreshToken) throw new Error('No refresh token available');
+    const { tokens } = await this.refreshNetwork(t);
+    return this.setTokens(tokens);
+  }
+
+  /**
+   * Refresh under the credentials transaction with reload-and-skip: if another
+   * process already produced a fresh jwt for this account, adopt it instead of
+   * refreshing (which would spend our now-rotated refresh token). Falls back to
+   * a plain refresh when no transaction is wired.
+   */
+  private async refreshOrAdopt(): Promise<void> {
+    const tx = this.opts.transaction;
+    if (!tx) {
+      await this.refresh();
+      return;
+    }
+    await tx(async (snapshot, save) => {
+      const acct = this.opts.getCredentials()?.email;
+      const snapTokens = sameAccount(snapshot, acct) ? snapshot?.tokens : undefined;
+      if (snapTokens && this.isFresh(snapTokens) && snapTokens.jwt !== this.tokens?.jwt) {
+        this.opts.log('auth: adopting fresh tokens from another process (skip refresh)');
+        this.adoptTokens(snapTokens);
+        // Also adopt the device did the other process rotated + persisted, or we
+        // would keep emitting a stale TAL-Did/did cookie — currentDid() prefers
+        // getDevice().did, which onDid() refreshes. Prefer the persisted
+        // device-level did; fall back to the adopted token's did.
+        const adoptedDid = snapshot?.device?.did ?? snapTokens.did;
+        if (adoptedDid && adoptedDid !== this.currentDid()) {
+          this.capturedDid = adoptedDid;
+          this.opts.onDid?.(adoptedDid);
+        }
+        return;
+      }
+      // Refresh from the freshest refresh token on disk (it may have rotated).
+      const base = snapTokens ?? this.tokens ?? undefined;
+      if (!base?.refreshToken) throw new Error('No refresh token available');
+      const { tokens: newTokens, did } = await this.refreshNetwork(base);
+      // Persist a rotated did into the device record in the SAME atomic write.
+      const patch: Partial<Credentials> = { tokens: newTokens };
+      if (did) {
+        const profile = (snapshot?.device ?? this.opts.getDevice?.())?.profile;
+        if (profile) patch.device = { profile, did };
+      }
+      save(patch);
+      this.adoptTokens(newTokens);
+    });
   }
 
   /**
@@ -378,7 +585,7 @@ export class AuthManager {
     }
     if (Date.now() >= this.tokens.jwtExpiresAt - REFRESH_SKEW_MS) {
       try {
-        await this.refresh();
+        await this.refreshOrAdopt();
       } catch (err) {
         this.opts.log(`auth: refresh failed (${(err as Error).message}); trying re-login`);
         const creds = this.opts.getCredentials();

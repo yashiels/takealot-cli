@@ -28,11 +28,14 @@ import type {
 
 // Defaults (overridable via config).
 export const DEFAULTS = {
+  // Search stays on v-1-14-0: it works and its response parser is coupled to that
+  // shape. The authenticated mobile API tracks the current app (v-1-18-0).
   searchApiBase: 'https://api.takealot.com/rest/v-1-14-0',
-  mobileApiBase: 'https://api.takealot.com/rest/v-1-16-0',
+  mobileApiBase: 'https://api.takealot.com/rest/v-1-18-0',
   browserUserAgent:
     'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
-  mobileUserAgent: 'TAL-Android/3.51.0 (fi.android.takealot; build:800735; 14; samsung; SM-S928B; Phone)',
+  // Fallback only — the client is normally handed a UA built from the device profile.
+  mobileUserAgent: 'TAL-Android/4.2.2 (fi.android.takealot; build:800750; 14; samsung; SM-S928B; Phone)',
   platform: 'android',
 } as const;
 
@@ -58,6 +61,8 @@ export interface ClientOptions {
   searchApiBase?: string;
   mobileApiBase?: string;
   browserUserAgent?: string;
+  /** Mobile UA for authenticated calls (built from the device profile). */
+  mobileUserAgent?: string;
   /** Order-history products for preference matching. */
   history?: PreferenceItem[];
   /** Explicit preferred brands for preference matching. */
@@ -100,6 +105,7 @@ export class TakealotClient {
   private searchApiBase: string;
   private mobileApiBase: string;
   private browserUA: string;
+  private mobileUA: string;
   private history: PreferenceItem[];
   private preferredBrands: string[];
 
@@ -109,6 +115,7 @@ export class TakealotClient {
     this.searchApiBase = opts.searchApiBase ?? DEFAULTS.searchApiBase;
     this.mobileApiBase = opts.mobileApiBase ?? DEFAULTS.mobileApiBase;
     this.browserUA = opts.browserUserAgent ?? DEFAULTS.browserUserAgent;
+    this.mobileUA = opts.mobileUserAgent ?? DEFAULTS.mobileUserAgent;
     this.history = opts.history ?? [];
     this.preferredBrands = opts.preferredBrands ?? [];
   }
@@ -147,7 +154,7 @@ export class TakealotClient {
     const headers: Record<string, string> = {
       accept: 'application/json, */*',
       'content-type': 'application/json',
-      'user-agent': DEFAULTS.mobileUserAgent,
+      'user-agent': this.mobileUA,
       ...this.auth.authHeaders(),
       ...((init.headers as Record<string, string>) ?? {}),
     };

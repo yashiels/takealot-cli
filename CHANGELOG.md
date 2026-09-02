@@ -7,8 +7,19 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-02
+
+### Changed
+
+- Bumped the authenticated mobile API base to `v-1-18-0` and the mobile User-Agent to `TAL-Android/4.2.2 (build 800750)`, matching the current Takealot Android app. Search stays on `v-1-14-0`. Both bases and the device profile remain overridable via `config.json` (#163)
+
 ### Added
 
+- **Headless device trust** — the server-assigned `did` is now captured (from `Set-Cookie` and the body, cookie wins) and persisted at device scope, and sent as the `TAL-Did` header + `did` cookie on **every** request including login and refresh. Completing 2FA once with `trust_this_device:true` now trusts the device, so later logins — even a full re-login after tokens are wiped — skip the OTP. This makes authed commands work headlessly on agents/claws/devices (#161)
+- **Two-step headless OTP** — `takealot login --json` emits `{"status":"otp_required","challenge":"<nonce>",…}` and exits 0; a separate `takealot login --otp <code> --challenge <nonce>` (or `TAKEALOT_OTP` + `TAKEALOT_CHALLENGE`) completes it. The persisted challenge is per-account, bound to the account/device/UA, and requires its nonce, so it can't be hijacked or replayed (#162)
+- **Non-interactive credential injection** — `TAKEALOT_EMAIL` + `TAKEALOT_PASSWORD` override stored credentials (op-sa / 1Password friendly); persisted only after a successful login (#162)
+- **Cross-process credentials transaction** — token/did writes go through one serialized, atomically-written transaction with an OS-backed directory lock, so parallel invocations sharing `credentials.json` no longer invalidate each other's rotating refresh token; the loser adopts the winner's tokens instead of refreshing (#160)
+- Mocked-but-stable Android device profile driving the mobile User-Agent (overridable via `config.deviceProfile`); `config show` reports the device profile and did-trust status (redacted) (#161, #162)
 - Two-step (OTP / 2FA) login — `loginWithOtp()` detects the `two_step_verification: "enabled_untrusted"` response, captures the `__cf_bm` Cloudflare cookie, and submits it with the OTP in a second request
 - Concurrency-safe token renewal and stale-401 handling
 - Canonical product-detail links (`www.takealot.com/<slug>/PLID<id>`) on `search`, `cart`, and `orders` output and in `--json` (`url` field) (#19)

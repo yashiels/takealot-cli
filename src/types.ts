@@ -26,11 +26,62 @@ export interface TokenSet {
   jwtExpiresAt: number;
 }
 
-/** Stored login credentials plus the most recent token set. */
+/**
+ * A mocked-but-stable Android device fingerprint. Generated once and reused
+ * verbatim so the device stays recognisable to Takealot's trust store — a
+ * shifting fingerprint risks de-trusting the device and re-triggering 2FA.
+ */
+export interface DeviceProfile {
+  androidRelease: string;
+  brand: string;
+  model: string;
+  appVersion: string;
+  appBuild: string;
+}
+
+/**
+ * The device identity persisted alongside credentials. `did` is the server-
+ * assigned device id (the trust anchor) — never minted locally, only captured
+ * from a login/refresh response and echoed back as `TAL-Did` + `did` cookie.
+ * It lives at device scope so it survives a token clear.
+ */
+export interface DeviceRecord {
+  did?: string;
+  profile: DeviceProfile;
+}
+
+/** Stored login credentials plus the most recent token set and device identity. */
 export interface Credentials {
   email: string;
   password: string;
   tokens?: TokenSet;
+  device?: DeviceRecord;
+}
+
+/**
+ * A persisted 2FA challenge, written by `beginLogin` so a separate headless
+ * process can complete it with `completeLogin`. Bound to one account + device
+ * so it can never be hijacked or replayed against another challenge.
+ */
+export interface PendingOtp {
+  /** sha256 of the lowercased account email this challenge belongs to. */
+  emailHash: string;
+  /** did captured from request-1 (replayed verbatim in request-2). */
+  did?: string;
+  /** The Cloudflare `__cf_bm=...` cookie required by request-2. */
+  cfBm: string;
+  /** Where the OTP was sent (e.g. a masked phone number), if the server said. */
+  otpSentTo?: string;
+  /** Server-stated validity window (otp_status.valid_millis, ~300000). */
+  validMs: number;
+  /** Epoch ms when the challenge was created. */
+  createdAt: number;
+  /** Mobile API base in force when the challenge was started. */
+  apiBase: string;
+  /** Hash of the device profile in force (UA must match to complete). */
+  uaProfileHash: string;
+  /** Caller-bound nonce; completion must present it (`--challenge`). */
+  nonce: string;
 }
 
 // =====================
@@ -40,7 +91,7 @@ export interface Credentials {
 export interface Config {
   /** Override the search API base (default: the desktop v-1-14-0 endpoint). */
   searchApiBase?: string;
-  /** Override the authenticated mobile API base (default: v-1-16-0). */
+  /** Override the authenticated mobile API base (default: v-1-18-0). */
   mobileApiBase?: string;
   /** Override the User-Agent used for unauthenticated search. */
   browserUserAgent?: string;
@@ -52,6 +103,8 @@ export interface Config {
   preferredBrands?: string[];
   /** Saved-card reference (UUID) to use by default at checkout. */
   defaultCardReference?: string;
+  /** Override any field of the mocked Android device profile. */
+  deviceProfile?: Partial<DeviceProfile>;
 }
 
 // =====================

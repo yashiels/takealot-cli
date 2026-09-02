@@ -18,7 +18,7 @@ import { preferencesRefresh, preferencesShow } from './commands/preferences.js';
 import { configShow } from './commands/config.js';
 import { loginCommand } from './commands/login.js';
 
-const VERSION = '0.3.0';
+const VERSION = '0.4.0';
 
 /** Add the two global flags to a command so they parse in any position. */
 function withGlobals(cmd: Command): Command {
@@ -157,8 +157,16 @@ withGlobals(config.command('show'))
 withGlobals(program.command('login'))
   .description('log in to Takealot, rotating the cached tokens')
   .option('--reset', 're-enter email/password before logging in')
-  .action((options: { reset?: boolean }, command: Command) =>
-    run(command, (ctx) => loginCommand(ctx, { reset: Boolean(options.reset) })),
+  .option('--otp <code>', 'complete a 2FA challenge (prefer TAKEALOT_OTP — flags leak via ps/history)')
+  .option('--challenge <nonce>', 'the challenge nonce from the otp_required output (required with --otp)')
+  .action((options: { reset?: boolean; otp?: string; challenge?: string }, command: Command) =>
+    run(command, (ctx) =>
+      loginCommand(ctx, {
+        reset: Boolean(options.reset),
+        otp: options.otp,
+        challenge: options.challenge,
+      }),
+    ),
   );
 
 if (process.argv.length <= 2) {
