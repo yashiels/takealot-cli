@@ -11,7 +11,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import * as crypto from 'node:crypto';
-import type { Config, Credentials, PendingOtp, PreferenceItem } from '../types.js';
+import type { Config, Credentials, PendingOrder, PendingOtp, PreferenceItem } from '../types.js';
 
 export function configDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
@@ -346,6 +346,46 @@ export function writePendingOtp(pending: PendingOtp): void {
 export function clearPendingOtp(emailHashHex: string): void {
   try {
     fs.rmSync(pendingOtpPath(emailHashHex), { force: true });
+  } catch {
+    /* best effort */
+  }
+}
+
+// =====================
+// Data-section form cache (per-account, per-flow) — used for LOCAL submit binding
+// =====================
+
+const flowSlug = (flow: string): string => flow.replace(/[^a-zA-Z0-9]+/g, '-');
+
+export const formCachePath = (emailHashHex: string, flow: string): string =>
+  path.join(configDir(), `form-${emailHashHex}-${flowSlug(flow)}.json`);
+
+export function saveFormCache(emailHashHex: string, flow: string, layout: unknown): void {
+  atomicWriteJson(formCachePath(emailHashHex, flow), { flow, savedAt: Date.now(), layout }, 0o600);
+}
+
+export function loadFormCache(emailHashHex: string, flow: string): { flow: string; savedAt: number; layout: unknown } | null {
+  return readJson(formCachePath(emailHashHex, flow));
+}
+
+// =====================
+// Pending checkout order (per-account) — ambiguous-result recovery
+// =====================
+
+export const pendingOrderPath = (emailHashHex: string): string =>
+  path.join(configDir(), `pending-order-${emailHashHex}.json`);
+
+export function loadPendingOrder(emailHashHex: string): PendingOrder | null {
+  return readJson<PendingOrder>(pendingOrderPath(emailHashHex));
+}
+
+export function writePendingOrder(order: PendingOrder): void {
+  atomicWriteJson(pendingOrderPath(order.emailHash), order, 0o600);
+}
+
+export function clearPendingOrder(emailHashHex: string): void {
+  try {
+    fs.rmSync(pendingOrderPath(emailHashHex), { force: true });
   } catch {
     /* best effort */
   }

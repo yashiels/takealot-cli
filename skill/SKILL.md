@@ -215,3 +215,44 @@ takealot cart
 takealot checkout              # dry-run first
 takealot checkout --confirm    # then pay
 ```
+
+## Full shopping surface (v0.5)
+
+The CLI now covers every non-telemetry endpoint the Takealot app exposes (see
+`docs/endpoints-catalogue.json` — the frozen manifest). Commands are `--json` throughout.
+
+**Typed core** (nice human + rich JSON): `search`, `info <PLID>`, `cart` (+ `add --sku/--plid`,
+`set-qty`, `remove`, `basket`, `clear`), `checkout` (dry-run shows delivery + card + total;
+`--confirm` pays; `resume <orderId>` after 3DS).
+
+**Passthrough** (raw API JSON under `--json`, compact summary otherwise): `deals`, `recommend`,
+`buy-again`, `autocomplete`, `trending`, `reviews`, `orders …`, `returns …`, `refunds …`,
+`wishlist …`, `credits …`, `cards …`, `address …`, `pickup-points`, `invoices …`, `plus …`
+(Takealot Plus), `account …`, `myreviews …`, `help …` (incl. `help chat`).
+
+### Safety contracts (important for agents)
+
+- **Writes are dry-run by default.** Any state-changing command prints the exact request it
+  *would* send and does nothing; add `--confirm` to perform it (`--yes` skips the TTY prompt).
+  Example: `takealot address use A123` → dry run; `takealot address use A123 --confirm`.
+- **Redaction on by default.** Secrets are masked in all output and errors; 3DS challenge URLs
+  and signed invoice/PDF URLs are preserved so workflows still work. `--unsafe-raw` prints
+  literal JSON (leaks secrets — avoid).
+- **Identifiers are explicit:** `--sku` (buyable) vs `--plid` (listing); `cart set-qty`/`remove`
+  take the buyable SKU id.
+- **Checkout is idempotent:** an interrupted `--confirm` is reconciled (never re-charged); a 3DS
+  challenge yields `{ "status": "action_required", "challengeUrl": … }` — open it, then
+  `takealot checkout resume <orderId>`.
+
+### Data-section writes (form → submit)
+
+Some account/returns/subscription writes are server-defined forms. Two steps:
+
+```bash
+takealot account password form              # fetch + locally cache the form layout
+# edit the JSON, keeping the section_id/field_id from the form
+takealot account password submit --file filled.json --confirm
+```
+
+`submit` validates your section/field ids against the fetched form locally (rejecting foreign or
+stale ids) before sending. Use `--file -` to read the payload from stdin.

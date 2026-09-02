@@ -233,3 +233,13 @@ GET /customers/{customer_id}/credits/balance
 6. **PayGate redirect flow** — steps 5-7 involve a WebView redirect chain. For pure API, we need to either:
    a. Follow the redirect chain programmatically (fetch the PayGate URLs, extract form data, POST completion)
    b. Or find a way to skip it entirely (if `authorized:true` ever comes back from step 5)
+---
+
+## Full endpoint catalogue
+
+The complete, machine-readable list of every endpoint the app exposes (extracted from the
+decompiled APK v4.2.2) lives in **`docs/endpoints-catalogue.json`** — one row per endpoint with
+`{domain, method, path, auth, encoding, mutating, excluded, command}`. It is the source of truth
+for the CLI's coverage: a contract test drives every non-excluded row and asserts the exact
+request. 192 endpoints map to commands; 5 (telemetry/ads + internal token refresh) are excluded
+with a reason. API base for authenticated calls: `v-1-18-0`.

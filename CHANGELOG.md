@@ -7,6 +7,37 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added — full shopping loop (all 192 app endpoints)
+
+- **Complete endpoint coverage.** Every non-telemetry endpoint the Takealot Android app
+  exposes (192 of 197 catalogued; 5 telemetry/ads/auth-internal excluded with a reason) is
+  reachable as a CLI command. The frozen `docs/endpoints-catalogue.json` is the source of
+  truth; a contract test drives every endpoint and asserts the exact method/path/auth/encoding.
+- **Generic request core** (`apiRequest`): repeated query keys, JSON/form/text/DELETE-with-body
+  encodings, content-type-driven parse, `204`→null, structured `ApiError` (redacted body) under
+  `--json`, `429`→`rate_limited`+`retry_after`, `AbortController` timeouts, bounded GET-only retry.
+- **Cart editing:** `cart add --sku <id>` (exact buyable), `cart add --plid <id>` (resolved to
+  its SKU), `cart set-qty <sku> <n>`, `cart remove <sku>`.
+- **Product / browse:** `info <PLID>` (typed, `--credit-options`/`--bundle`/`--card`/`--reviews`),
+  `autocomplete`, `trending`, `deals`, `recommend`, `buy-again`, `reviews <PLID>`.
+- **Checkout:** dry-run now surfaces the selected delivery address, options, ETA, and fee;
+  `checkout --confirm` persists a per-account `pending-order` and reconciles an interrupted or
+  ambiguous run instead of re-charging; non-frictionless 3DS returns a structured
+  `action_required` (challenge URL preserved); `checkout resume <orderId>` completes it.
+- **Orders, returns/refunds, wishlist, credits/vouchers, cards, addresses, Takealot Plus,
+  account/security, reviews, invoices, help/chatbot** — full command groups.
+- **Data-section writes** use a locally-bound `form` → `submit --file <json>` pair (foreign/stale
+  field ids rejected against the fetched form; no assumed server token).
+
+### Security / safety
+
+- **Mutation gating:** every state-changing command is dry-run by default and prints the exact
+  intended request; it writes only with `--confirm` (`--yes` skips the TTY prompt).
+- **Recursive, workflow-safe redaction** on all output and error messages (credentials masked;
+  3DS challenge and signed invoice/PDF URLs preserved); `--unsafe-raw` opts out.
+- **Absolute-URL containment** (address validation): static host allowlist, HTTPS, header
+  suppression, manual redirects re-validated per hop.
+
 ## [0.4.0] — 2026-09-02
 
 ### Changed

@@ -74,3 +74,42 @@ export function rand(amount: number | undefined): string {
   if (amount === undefined || Number.isNaN(amount)) return 'R—';
   return `R${amount.toFixed(2)}`;
 }
+
+/**
+ * Compact human summary of an arbitrary (passthrough) JSON value: top-level
+ * keys, array lengths, and short scalar values. Never throws, whatever the
+ * shape. Used by passthrough commands whose response schema we don't type.
+ */
+export function renderRaw(data: unknown, indent = '  '): string {
+  const lines: string[] = [];
+  const scalar = (v: unknown): string => {
+    if (v === null) return 'null';
+    if (typeof v === 'string') return v.length > 80 ? JSON.stringify(v.slice(0, 77) + '…') : JSON.stringify(v);
+    return String(v);
+  };
+  const describe = (v: unknown): string => {
+    if (Array.isArray(v)) return c.dim(`[${v.length} item${v.length === 1 ? '' : 's'}]`);
+    if (v && typeof v === 'object') {
+      const keys = Object.keys(v as object);
+      return c.dim(`{${keys.length} field${keys.length === 1 ? '' : 's'}: ${keys.slice(0, 6).join(', ')}${keys.length > 6 ? '…' : ''}}`);
+    }
+    return scalar(v);
+  };
+  try {
+    if (data === null || data === undefined) return `${indent}${c.dim('(empty)')}`;
+    if (Array.isArray(data)) {
+      lines.push(`${indent}${c.dim(`${data.length} item(s)`)}`);
+      data.slice(0, 20).forEach((v, i) => lines.push(`${indent}${c.dim(`${i + 1}.`)} ${describe(v)}`));
+      if (data.length > 20) lines.push(`${indent}${c.dim(`…and ${data.length - 20} more`)}`);
+    } else if (typeof data === 'object') {
+      for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
+        lines.push(`${indent}${c.dim(k)}  ${describe(v)}`);
+      }
+    } else {
+      lines.push(`${indent}${scalar(data)}`);
+    }
+  } catch {
+    return `${indent}${c.dim('(unrenderable)')}`;
+  }
+  return lines.join('\n') || `${indent}${c.dim('(empty)')}`;
+}

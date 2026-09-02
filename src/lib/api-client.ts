@@ -14,6 +14,8 @@
 
 import type { AuthManager } from './auth.js';
 import { findPreferredProduct, type PreferenceMatch } from './preferences.js';
+import { endpoint, type Base, type EndpointRow, type Encoding, type HttpMethod } from './catalogue.js';
+import { redact, redactText, safeUrlPath } from './redact.js';
 import type {
   AddToCartResult,
   CartItem,
@@ -25,6 +27,60 @@ import type {
   SearchProduct,
   SearchResult,
 } from '../types.js';
+
+/** Structured API error — its `body` is redacted; commands surface it as {error}. */
+export class ApiError extends Error {
+  constructor(
+    readonly info: {
+      status: number;
+      code: string;
+      message: string;
+      path: string;
+      body?: unknown;
+      retryAfter?: number;
+    },
+  ) {
+    super(info.message);
+    this.name = 'ApiError';
+  }
+  toJSON() {
+    return { error: { ...this.info } };
+  }
+}
+
+/**
+ * Hosts an absolute (`@Url`) request may target. This is a **compile-time
+ * constant**, never user-configurable — a runtime-overridable allowlist would
+ * let a poisoned `addresses/config` response (or config) self-authorize an
+ * arbitrary host, defeating the SSRF containment.
+ */
+const ABSOLUTE_ALLOWLIST = ['takealot.com'] as const;
+
+const sleep = (ms: number): Promise<void> => new Promise((res) => setTimeout(res, ms));
+
+function hostAllowed(urlStr: string, allow: readonly string[]): boolean {
+  let u: URL;
+  try {
+    u = new URL(urlStr);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== 'https:') return false;
+  const host = u.hostname.toLowerCase();
+  return allow.some((a) => host === a || host.endsWith('.' + a));
+}
+
+export interface ApiRequestOpts {
+  base?: Base;
+  auth?: boolean;
+  encoding?: Encoding;
+  query?: Record<string, unknown>;
+  /** Request body: shaped by `encoding` (json/form/text/delete-body). */
+  body?: unknown;
+  timeoutMs?: number;
+  /** Bounded retry allowed (GET only). */
+  idempotent?: boolean;
+}
 
 // Defaults (overridable via config).
 export const DEFAULTS = {
@@ -183,6 +239,239 @@ export class TakealotClient {
     const id = this.auth.customerId;
     if (id === null) throw new Error('Not authenticated. Run `takealot login` first.');
     return id;
+  }
+
+  // =====================
+  // Generic request core — every catalogue endpoint routes through here.
+  // =====================
+
+  private baseUrl(base: Base): string {
+    if (base === 'search') return this.searchApiBase;
+    return this.mobileApiBase;
+  }
+
+  /** Build the query string, supporting repeated keys (array values). */
+  private buildQuery(query?: Record<string, unknown>): string {
+    if (!query) return '';
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) {
+      if (v === undefined || v === null) continue;
+      if (Array.isArray(v)) for (const item of v) p.append(k, String(item));
+      else p.append(k, String(v));
+    }
+    const s = p.toString();
+    return s ? `?${s}` : '';
+  }
+
+  /** Encode the body + content-type for the request. */
+  private encodeBody(encoding: Encoding, body: unknown): { body?: string; contentType?: string } {
+    switch (encoding) {
+      case 'json':
+      case 'delete-body':
+        return { body: JSON.stringify(body ?? {}), contentType: 'application/json' };
+      case 'form': {
+        const p = new URLSearchParams();
+        for (const [k, v] of Object.entries((body ?? {}) as Record<string, unknown>)) {
+          if (v !== undefined && v !== null) p.append(k, String(v));
+        }
+        return { body: p.toString(), contentType: 'application/x-www-form-urlencoded' };
+      }
+      case 'text':
+        return { body: String(body ?? ''), contentType: 'text/plain' };
+      case 'none':
+      default:
+        return {};
+    }
+  }
+
+  /** Parse a response by content-type; 204/empty → null; non-2xx → ApiError. */
+  private async parseResponse(res: Response, path: string): Promise<unknown> {
+    if (res.status === 204) return res.ok ? null : this.throwApi(res, null, path);
+    const text = await res.text().catch(() => '');
+    const ctype = (res.headers.get('content-type') || '').toLowerCase();
+    let data: unknown = null;
+    if (text) {
+      if (ctype.includes('application/json') || (!ctype && text.trim().startsWith('{'))) {
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { raw: text };
+        }
+      } else {
+        data = text;
+      }
+    }
+    if (!res.ok) return this.throwApi(res, data, path);
+    return data;
+  }
+
+  private throwApi(res: Response, body: unknown, path: string): never {
+    const anyBody = body as any;
+    const message =
+      (anyBody && (anyBody.message ?? anyBody.error?.message ?? anyBody.error)) || res.statusText || `HTTP ${res.status}`;
+    const rateLimited = res.status === 429 || anyBody?.otp_status?.status === 'cooldown';
+    const retryAfterHdr = Number(res.headers.get('retry-after'));
+    throw new ApiError({
+      status: res.status,
+      code: rateLimited ? 'rate_limited' : `http_${res.status}`,
+      message: redactText(String(message)),
+      path: safeUrlPath(path),
+      body: redact(body),
+      retryAfter: Number.isFinite(retryAfterHdr) ? retryAfterHdr : anyBody?.otp_status?.cooldown_seconds,
+    });
+  }
+
+  /** Public (unauthenticated) fetch: device UA/headers, no bearer. */
+  private async publicFetch(url: string, init: RequestInit, base: Base): Promise<Response> {
+    const ua = base === 'search' ? this.browserUA : this.mobileUA;
+    const headers: Record<string, string> = {
+      accept: 'application/json, */*',
+      'user-agent': ua,
+      ...this.auth.deviceHeaders(),
+      ...((init.headers as Record<string, string>) ?? {}),
+    };
+    this.logger.debug(`${init.method ?? 'GET'} ${url}`);
+    return fetch(url, { ...init, headers });
+  }
+
+  /** Contained absolute-URL fetch (address validation): static allowlist, HTTPS,
+   *  no auth/device headers, manual redirect re-validated per hop. */
+  private async absoluteFetch(url: string, init: RequestInit): Promise<Response> {
+    let current = url;
+    for (let hop = 0; hop < 5; hop++) {
+      if (!hostAllowed(current, ABSOLUTE_ALLOWLIST)) {
+        // Drop the query/fragment before reporting — a blocked URL may carry
+        // tokens we must not leak into the error message/path.
+        const safe = safeUrlPath(current);
+        throw new ApiError({
+          status: 0,
+          code: 'blocked_url',
+          message: `refusing absolute URL (host not on the static allowlist): ${safe}`,
+          path: safe,
+        });
+      }
+      const res = await fetch(current, {
+        ...init,
+        redirect: 'manual',
+        headers: {
+          accept: 'application/json, */*',
+          'user-agent': this.mobileUA,
+          ...((init.headers as Record<string, string>) ?? {}),
+        },
+      });
+      if (res.status >= 300 && res.status < 400) {
+        const loc = res.headers.get('location');
+        if (!loc) return res;
+        current = new URL(loc, current).toString();
+        continue; // re-validate the next hop at the top of the loop
+      }
+      return res;
+    }
+    throw new ApiError({ status: 0, code: 'too_many_redirects', message: 'too many redirects', path: safeUrlPath(url) });
+  }
+
+  /**
+   * The one request primitive all endpoints use. Resolves body encoding,
+   * content-type-driven parsing, timeouts, bounded GET retry, and error shaping.
+   * Authed paths inherit 401-refresh + rotation from `authedFetch`.
+   */
+  async apiRequest(method: HttpMethod, pathOrUrl: string, opts: ApiRequestOpts = {}): Promise<unknown> {
+    const base: Base = opts.base ?? 'mobile';
+    const encoding: Encoding = opts.encoding ?? 'none';
+    const { body, contentType } = this.encodeBody(encoding, opts.body);
+    const headers: Record<string, string> = {};
+    if (contentType) headers['content-type'] = contentType;
+
+    const url =
+      base === 'absolute'
+        ? pathOrUrl + this.buildQuery(opts.query)
+        : this.baseUrl(base) + '/' + pathOrUrl.replace(/^\//, '') + this.buildQuery(opts.query);
+
+    const timeoutMs = opts.timeoutMs ?? 20_000;
+    const maxAttempts = opts.idempotent && method === 'GET' ? 3 : 1;
+
+    for (let attempt = 1; ; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      const init: RequestInit = { method, headers, signal: controller.signal };
+      if (body !== undefined) init.body = body;
+      try {
+        let res: Response;
+        if (base === 'absolute') res = await this.absoluteFetch(url, init);
+        else if (opts.auth) res = await this.authedFetch(url, init);
+        else res = await this.publicFetch(url, init, base);
+        if (res.status >= 500 && attempt < maxAttempts) {
+          await sleep(150 * attempt);
+          continue;
+        }
+        return await this.parseResponse(res, url);
+      } catch (e) {
+        if (e instanceof ApiError) throw e;
+        const aborted = (e as any)?.name === 'AbortError';
+        if (!aborted && attempt < maxAttempts) {
+          await sleep(150 * attempt);
+          continue;
+        }
+        throw new ApiError({
+          status: 0,
+          code: aborted ? 'timeout' : 'network',
+          message: aborted ? `request timed out after ${timeoutMs}ms` : redactText(String((e as Error)?.message ?? e)),
+          path: safeUrlPath(url),
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+  }
+
+  /**
+   * Invoke a catalogue endpoint by id. Substitutes `{customerId}` from auth and
+   * other `{param}`s from `params`, wires the body per the row's encoding, and
+   * returns the raw parsed response (commands redact before display).
+   */
+  private resolvePath(row: EndpointRow, params: Record<string, string | number>): string {
+    if (row.base === 'absolute') return String(params.absoluteUrl ?? '');
+    return row.path.replace(/\{(\w+)\}/g, (_m, name: string) => {
+      if (name in params) return encodeURIComponent(String(params[name]));
+      if (name === 'customerId') return String(this.requireCustomerId());
+      throw new Error(`missing path param {${name}} for ${row.id}`);
+    });
+  }
+
+  async call(
+    id: string,
+    args: { params?: Record<string, string | number>; query?: Record<string, unknown>; body?: unknown } = {},
+  ): Promise<unknown> {
+    const row = endpoint(id);
+    if (row.excluded) throw new Error(`endpoint ${id} is excluded: ${row.reason}`);
+    const path = this.resolvePath(row, args.params ?? {});
+    return this.apiRequest(row.method, path, {
+      base: row.base,
+      auth: row.auth,
+      encoding: row.encoding,
+      query: args.query,
+      body: args.body,
+      idempotent: row.method === 'GET',
+    });
+  }
+
+  /** Resolve (without executing) the request a `call` would send — for dry-run preview. */
+  describeCall(
+    id: string,
+    args: { params?: Record<string, string | number>; query?: Record<string, unknown>; body?: unknown } = {},
+  ): { method: HttpMethod; url: string; body?: unknown } {
+    const row = endpoint(id);
+    const path = this.resolvePath(row, args.params ?? {});
+    const url =
+      row.base === 'absolute'
+        ? path + this.buildQuery(args.query)
+        : this.baseUrl(row.base) + '/' + path.replace(/^\//, '') + this.buildQuery(args.query);
+    return { method: row.method, url, body: redact(args.body) };
+  }
+
+  /** Read the catalogue row for a command (used for gating + docs). */
+  endpointRow(id: string): EndpointRow {
+    return endpoint(id);
   }
 
   // =====================
@@ -352,6 +641,43 @@ export class TakealotClient {
     // Add-to-cart expects the buyable/SKU id, not the PLID.
     const res = await this.addToCart(match.product.skuId ?? match.product.productId, quantity);
     return { ...res, title: res.title ?? match.product.title, match };
+  }
+
+  /** Add an exact buyable SKU id to the cart (no search / preference pick). */
+  async addSkuToCart(skuId: number, quantity = 1): Promise<AddToCartResult> {
+    return this.addToCart(skuId, quantity);
+  }
+
+  /** Resolve a PLID to its buyable SKU id via product-details. */
+  async skuForPlid(plid: number): Promise<number> {
+    const data: any = await this.call('product.details', {
+      params: { plid },
+      query: { platform: DEFAULTS.platform, offer_opt: true },
+    });
+    const pv = data?.product_views ?? data?.product ?? data ?? {};
+    const sku = pv?.buybox_summary?.product_id ?? data?.buybox_summary?.product_id;
+    if (!sku) throw new Error(`could not resolve a buyable SKU for PLID${plid}`);
+    return Number(sku);
+  }
+
+  /** Update a cart line's quantity (PUT /cart/items). */
+  async setCartItemQuantity(skuId: number, quantity: number): Promise<unknown> {
+    const customerId = this.requireCustomerId();
+    return this.apiRequest('PUT', `/customers/${customerId}/cart/items`, {
+      auth: true,
+      encoding: 'json',
+      body: { products: [{ id: skuId, quantity }] },
+    });
+  }
+
+  /** Remove one cart line by its buyable SKU id (DELETE with body). */
+  async removeCartItem(skuId: number): Promise<unknown> {
+    const customerId = this.requireCustomerId();
+    return this.apiRequest('DELETE', `/customers/${customerId}/cart/items`, {
+      auth: true,
+      encoding: 'delete-body',
+      body: { products: [{ id: skuId }] },
+    });
   }
 
   async clearCart(): Promise<{ removed: number }> {

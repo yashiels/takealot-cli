@@ -11,14 +11,22 @@ import { Command } from 'commander';
 import { Context, type GlobalOptions } from './lib/context.js';
 import { c } from './lib/ui.js';
 import { searchCommand } from './commands/search.js';
-import { cartShow, cartAdd, cartAddBasket, cartClear } from './commands/cart.js';
-import { checkoutCommand } from './commands/checkout.js';
+import { cartShow, cartAdd, cartAddBasket, cartClear, cartSetQty, cartRemove } from './commands/cart.js';
+import { checkoutCommand, checkoutResume, checkoutReset } from './commands/checkout.js';
+import { infoCommand } from './commands/info.js';
 import { ordersList, ordersShow } from './commands/orders.js';
 import { preferencesRefresh, preferencesShow } from './commands/preferences.js';
 import { configShow } from './commands/config.js';
 import { loginCommand } from './commands/login.js';
+import { registerCatalogue } from './commands/register.js';
 
-const VERSION = '0.4.0';
+const VERSION = '0.5.0';
+
+const intOpt = (name: string) => (v: string) => {
+  const n = parseInt(v, 10);
+  if (Number.isNaN(n)) throw new Error(`invalid ${name}: ${v}`);
+  return n;
+};
 
 /** Add the two global flags to a command so they parse in any position. */
 function withGlobals(cmd: Command): Command {
@@ -85,26 +93,58 @@ const cart = withGlobals(program.command('cart'))
   .description('view and modify your cart')
   .action((_options: unknown, command: Command) => run(command, (ctx) => cartShow(ctx)));
 
-withGlobals(cart.command('add'))
-  .description('search for an item and add the preferred match to the cart')
-  .argument('<item...>', 'item to add, optionally prefixed with a quantity (e.g. "3 pencils")')
-  .action((item: string[], _options: unknown, command: Command) =>
-    run(command, (ctx) => cartAdd(ctx, item.join(' '))),
+const confirmOpts = (cmd: Command): Command =>
+  cmd.option('--confirm', 'perform the write (default is a dry run)').option('--yes', 'skip the confirm prompt');
+
+confirmOpts(withGlobals(cart.command('add')))
+  .description('add an item: --sku <id> (exact), --plid <id> (resolved to sku), or a search query')
+  .argument('[item...]', 'search query, optionally prefixed with a quantity (e.g. "3 pencils")')
+  .option('--sku <id>', 'add this exact buyable SKU id', intOpt('--sku'))
+  .option('--plid <id>', 'add the buyable SKU for this PLID', intOpt('--plid'))
+  .option('--qty <n>', 'quantity (with --sku/--plid)', intOpt('--qty'))
+  .action((item: string[], options: any, command: Command) =>
+    run(command, (ctx) => cartAdd(ctx, (item ?? []).join(' '), options)),
   );
 
-withGlobals(cart.command('basket'))
+confirmOpts(withGlobals(cart.command('set-qty')))
+  .description('update a cart line quantity (by buyable SKU id)')
+  .argument('<sku>', 'buyable SKU id', intOpt('<sku>'))
+  .argument('<qty>', 'new quantity', intOpt('<qty>'))
+  .action((sku: number, qty: number, options: any, command: Command) =>
+    run(command, (ctx) => cartSetQty(ctx, sku, qty, options)),
+  );
+
+confirmOpts(withGlobals(cart.command('remove')))
+  .description('remove one cart line (by buyable SKU id)')
+  .argument('<sku>', 'buyable SKU id', intOpt('<sku>'))
+  .action((sku: number, options: any, command: Command) => run(command, (ctx) => cartRemove(ctx, sku, options)));
+
+confirmOpts(withGlobals(cart.command('basket')))
   .description('add several items at once (comma/semicolon/newline separated)')
   .argument('<items>', 'e.g. "3 pencils, 2 pens, notebook"')
-  .action((items: string, _options: unknown, command: Command) =>
-    run(command, (ctx) => cartAddBasket(ctx, items)),
+  .action((items: string, options: any, command: Command) =>
+    run(command, (ctx) => cartAddBasket(ctx, items, options)),
   );
 
-withGlobals(cart.command('clear'))
+confirmOpts(withGlobals(cart.command('clear')))
   .description('remove everything from the cart')
-  .action((_options: unknown, command: Command) => run(command, (ctx) => cartClear(ctx)));
+  .action((options: any, command: Command) => run(command, (ctx) => cartClear(ctx, options)));
+
+// ---- info (product detail) ----
+withGlobals(program.command('info'))
+  .description('product detail for a PLID (price, stock, sku, rating)')
+  .argument('<plid>', 'product PLID', intOpt('<plid>'))
+  .option('--credit-options', 'show instalment/credit options')
+  .option('--bundle <ids>', 'show bundle deals for the given bundle ids')
+  .option('--card', 'lightweight product card')
+  .option('--reviews', 'public product reviews')
+  .option('--unsafe-raw', 'print unredacted JSON (leaks secrets)')
+  .action((plid: number, options: any, command: Command) =>
+    run(command, (ctx) => infoCommand(ctx, plid, options)),
+  );
 
 // ---- checkout ----
-withGlobals(program.command('checkout'))
+const checkout = withGlobals(program.command('checkout'))
   .description('check out the current cart (dry run unless --confirm)')
   .option('--confirm', 'actually place the order and pay')
   .option('--yes', 'skip the interactive confirmation prompt')
@@ -112,24 +152,18 @@ withGlobals(program.command('checkout'))
     run(command, (ctx) => checkoutCommand(ctx, { confirm: Boolean(options.confirm), yes: Boolean(options.yes) })),
   );
 
-// ---- orders ----
-const orders = withGlobals(program.command('orders'))
-  .description('list recent orders')
-  .option('--limit <n>', 'max orders to show', (v) => {
-    const n = parseInt(v, 10);
-    if (Number.isNaN(n) || n < 1) throw new Error(`invalid --limit: ${v}`);
-    return n;
-  }, 20)
-  .action((options: { limit: number }, command: Command) =>
-    run(command, (ctx) => ordersList(ctx, { limit: options.limit })),
+withGlobals(checkout.command('resume'))
+  .description('reconcile + complete/initiate a payment (dry-run unless --confirm)')
+  .argument('<orderId>', 'the order id from the action_required result')
+  .option('--confirm', 'actually reconcile and pay')
+  .option('--yes', 'skip the interactive confirmation prompt')
+  .action((orderId: string, options: { confirm?: boolean; yes?: boolean }, command: Command) =>
+    run(command, (ctx) => checkoutResume(ctx, orderId, options)),
   );
 
-withGlobals(orders.command('show'))
-  .description('show full detail for one order')
-  .argument('<id>', 'order id')
-  .action((id: string, _options: unknown, command: Command) =>
-    run(command, (ctx) => ordersShow(ctx, id)),
-  );
+withGlobals(checkout.command('reset'))
+  .description('clear a stuck pending-checkout marker (after verifying via `orders`)')
+  .action((_o: unknown, command: Command) => run(command, (ctx) => checkoutReset(ctx)));
 
 // ---- preferences ----
 const preferences = withGlobals(program.command('preferences'))
@@ -168,6 +202,23 @@ withGlobals(program.command('login'))
       }),
     ),
   );
+
+// ---- orders (typed) — registered before the catalogue so it wins over the
+// generic passthrough; `orders track/cancel/...` are auto-wired under this group.
+const orders = withGlobals(program.command('orders'))
+  .description('list recent orders')
+  .option('--limit <n>', 'max orders to show', intOpt('--limit'), 20)
+  .action((options: { limit: number }, command: Command) =>
+    run(command, (ctx) => ordersList(ctx, { limit: options.limit })),
+  );
+
+withGlobals(orders.command('show'))
+  .description('show full detail for one order')
+  .argument('<id>', 'order id')
+  .action((id: string, _options: unknown, command: Command) => run(command, (ctx) => ordersShow(ctx, id)));
+
+// ---- everything else: auto-wired from the endpoint catalogue ----
+registerCatalogue(program, withGlobals, run, globalFlags);
 
 if (process.argv.length <= 2) {
   program.outputHelp();

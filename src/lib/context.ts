@@ -101,6 +101,13 @@ export class Context {
     return this.creds;
   }
 
+  /** Stable per-account hash for the acting account (form cache / pending order keys). */
+  accountHash(): string {
+    const email = process.env.TAKEALOT_EMAIL?.trim() || this.creds?.email;
+    if (!email) throw new Error('No account — set TAKEALOT_EMAIL or run `takealot login`.');
+    return emailHash(email);
+  }
+
   /** Adopt a captured did into memory only (disk persistence rides the normal save paths). */
   private adoptDid(did: string): void {
     this.device = { ...this.device, did };
