@@ -1,6 +1,6 @@
 ---
 name: takealot
-description: Shop on Takealot.com from the terminal. Search, add to cart, and checkout via pure API.
+description: Shop Takealot.com end-to-end from the terminal, headless-first for agents. Search, browse, cart, checkout & pay, orders, tracking, returns, wishlist, credits, Plus, account — all 192 API endpoints, device-trust auth that skips OTP after first login, --json everywhere, dry-run-by-default writes.
 ---
 
 # takealot skill
