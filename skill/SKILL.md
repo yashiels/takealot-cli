@@ -216,7 +216,7 @@ takealot checkout              # dry-run first
 takealot checkout --confirm    # then pay
 ```
 
-## Full shopping surface (v0.5)
+## Full shopping surface
 
 The CLI now covers every non-telemetry endpoint the Takealot app exposes (see
 `docs/endpoints-catalogue.json` — the frozen manifest). Commands are `--json` throughout.
