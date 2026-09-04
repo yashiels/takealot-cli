@@ -20,7 +20,7 @@ import { configShow } from './commands/config.js';
 import { loginCommand } from './commands/login.js';
 import { registerCatalogue } from './commands/register.js';
 
-const VERSION = '0.5.0';
+const VERSION = '0.6.0';
 
 const intOpt = (name: string) => (v: string) => {
   const n = parseInt(v, 10);
