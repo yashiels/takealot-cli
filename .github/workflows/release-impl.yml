@@ -161,51 +161,66 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Homebrew tap
+      - name: Update Homebrew tap (signed commit)
         env:
-          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          # HOMEBREW_TAP_TOKEN is owned by a bypass user, so createCommitOnBranch
+          # lands a GitHub-signed ("Verified") commit that also satisfies the
+          # tap's branch ruleset — unlike a plain github-actions[bot] git push.
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
+          set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
           SHA="${{ steps.tarballs.outputs.macos_sha }}"
+          TAP="yashiels/homebrew-tap"
+          BRANCH="main"
+          FORMULA="takealot"
 
-          WORK=$(mktemp -d)
-          git clone "https://github.com/yashiels/homebrew-tap.git" "$WORK"
-          cd "$WORK"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          python3 -c "
-          v, s = '${VERSION}', '${SHA}'
-          formula = f'''class Takealot < Formula
-            desc \"CLI for Takealot.com\"
-            homepage \"https://github.com/yashiels/takealot-cli\"
-            version \"{v}\"
+          content=$(cat <<EOF
+          class Takealot < Formula
+            desc "CLI for Takealot.com"
+            homepage "https://github.com/yashiels/takealot-cli"
+            version "${VERSION}"
 
             on_macos do
               if Hardware::CPU.arm?
-                url \"https://github.com/yashiels/takealot-cli/releases/download/v{v}/takealot-v{v}-darwin-arm64.tar.gz\"
-                sha256 \"{s}\"
+                url "https://github.com/yashiels/takealot-cli/releases/download/v${VERSION}/takealot-v${VERSION}-darwin-arm64.tar.gz"
+                sha256 "${SHA}"
               end
             end
 
             def install
-              bin.install \"takealot\"
+              bin.install "takealot"
             end
 
             test do
-              system bin/\"takealot\", \"--version\"
+              system bin/"takealot", "--version"
             end
           end
-          '''
-          import textwrap
-          open('Formula/takealot.rb', 'w').write(textwrap.dedent(formula).lstrip())
-          "
+          EOF
+          )
+          # Strip the 10-space indent this step's heredoc adds to each line.
+          content=$(printf '%s\n' "$content" | sed 's/^          //')
+          b64=$(printf '%s' "$content" | base64 | tr -d '\n')
 
-          git add Formula/takealot.rb
-          git commit -m "chore: bump takealot to v${VERSION}"
-          git remote set-url origin "https://x-access-token:${TAP_TOKEN}@github.com/yashiels/homebrew-tap.git"
-          git push origin main
-          echo "Homebrew tap updated to v${VERSION}"
+          for attempt in 1 2 3 4 5; do
+            oid=$(gh api "repos/${TAP}/git/ref/heads/${BRANCH}" --jq '.object.sha')
+            payload=$(jq -n \
+              --arg repo "$TAP" --arg branch "$BRANCH" --arg oid "$oid" \
+              --arg headline "${FORMULA}: update formula for v${VERSION}" \
+              --arg path "Formula/${FORMULA}.rb" --arg c "$b64" \
+              '{query: "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { url } } }",
+                variables: {input: {branch: {repositoryNameWithOwner: $repo, branchName: $branch}, expectedHeadOid: $oid, message: {headline: $headline}, fileChanges: {additions: [{path: $path, contents: $c}]}}}}')
+            if out=$(printf '%s' "$payload" | gh api graphql --input - 2>&1); then
+              url=$(printf '%s' "$out" | jq -r '.data.createCommitOnBranch.commit.url // empty')
+              if [ -n "$url" ]; then echo "Homebrew tap updated (verified): $url"; exit 0; fi
+              echo "attempt $attempt: no commit in response: $out"
+            else
+              echo "attempt $attempt failed: $out"
+            fi
+            sleep $((attempt * 2))
+          done
+          echo "Failed to update Homebrew tap after retries" >&2
+          exit 1
 
       - name: Upload artifacts
         uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4
