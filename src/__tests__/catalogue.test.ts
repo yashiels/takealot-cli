@@ -51,10 +51,10 @@ describe('endpoint catalogue — coverage', () => {
     }
   });
 
-  it('only payment, telemetry, ads, and auth-internal endpoints are excluded', () => {
+  it('only payment, telemetry, ads, auth-internal, and documented web-only endpoints are excluded', () => {
     const excluded = CATALOGUE.filter((e) => e.excluded).map((e) => e.id).sort();
     expect(excluded).toEqual(
-      ['ads.sponsoredDisplay', 'ads.sponsoredProducts', 'auth.refresh', 'config.abtest', 'ute.collect', ...PAYMENT_BLOCKED_IDS].sort(),
+      ['ads.sponsoredDisplay', 'ads.sponsoredProducts', 'auth.refresh', 'config.abtest', 'ute.collect', 'wishlist.items.moveTsin', ...PAYMENT_BLOCKED_IDS].sort(),
     );
   });
 

@@ -60,6 +60,22 @@ describe('takealot-cli smoke tests', () => {
     expect(result.stderr).toContain('too many arguments');
   });
 
+  it('registers typed wishlist add, move, and bulk-remove options', () => {
+    const add = execFileSync('node', [cli, 'wishlist', 'add', '--help'], { encoding: 'utf8' });
+    const move = execFileSync('node', [cli, 'wishlist', 'move', '--help'], { encoding: 'utf8' });
+    const remove = execFileSync('node', [cli, 'wishlist', 'rm-items', '--help'], { encoding: 'utf8' });
+    expect(add).toContain('[target] [groupId]');
+    expect(add).toContain('wishlist add <id> --sku N');
+    expect(add).toContain('wishlist add group <id> --file path');
+    expect(add).toContain('--sku <id>');
+    expect(add).toContain('--plid <id>');
+    expect(move).toContain('--from <groupId>');
+    expect(move).toContain('--to <groupId>');
+    expect(move).toContain('--tsin <id>');
+    expect(remove).toContain('<groupId>');
+    expect(remove).toContain('--tsin <id>');
+  });
+
   it.skipIf(isCI)('should search without auth (live API)', () => {
     const out = execFileSync('node', [cli, 'search', 'test', '--limit', '1', '--json'], {
       encoding: 'utf8',

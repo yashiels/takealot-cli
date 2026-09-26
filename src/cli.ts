@@ -29,6 +29,7 @@ import { configShow } from './commands/config.js';
 import { loginCommand } from './commands/login.js';
 import { registerCatalogue } from './commands/register.js';
 import { mutateEndpoint, readBodyFromFlags } from './commands/generic.js';
+import { wishlistAdd, wishlistMove, wishlistRemoveItems } from './commands/wishlist.js';
 
 declare const __TAKEALOT_VERSION__: string | undefined;
 const packageVersion = (): string => {
@@ -53,6 +54,11 @@ const intOpt = (name: string) => (v: string) => {
   if (Number.isNaN(n)) throw new UsageError(`invalid ${name}: ${v}`);
   return n;
 };
+
+const intListOpt = (name: string) => (value: string, previous: number[] = []) => [
+  ...previous,
+  intOpt(name)(value),
+];
 
 /** Add the two global flags to a command so they parse in any position. */
 function withGlobals(cmd: Command): Command {
@@ -415,6 +421,42 @@ withGlobals(orders.command('show'))
 
 // ---- everything else: auto-wired from the endpoint catalogue ----
 registerCatalogue(program, withGlobals, run, globalFlags);
+
+const wishlist = program.commands.find((command) => command.name() === 'wishlist')!;
+
+confirmOpts(withGlobals(wishlist.command('add')))
+  .description('add products: wishlist add <id> --sku N, or wishlist add group <id> --file path')
+  .allowExcessArguments(false)
+  .argument('[target]', 'wishlist group id, or literal "group" for the legacy form')
+  .argument('[groupId]', 'wishlist group id after literal "group"')
+  .option('--sku <id>', 'buyable SKU id (repeatable)', intListOpt('--sku'))
+  .option('--plid <id>', 'resolve a single-variant PLID to its buyable SKU', intOpt('--plid'))
+  .option('--file <path>', 'JSON payload (or - for stdin)')
+  .option('--unsafe-raw', 'print unredacted JSON (leaks secrets)')
+  .action((target: string | undefined, groupId: string | undefined, options: any, command: Command) =>
+    run(command, (ctx) => wishlistAdd(ctx, target, groupId, options)),
+  );
+
+confirmOpts(withGlobals(wishlist.command('move')))
+  .description('move products between wishlist groups')
+  .allowExcessArguments(false)
+  .option('--from <groupId>', 'source wishlist group id', intOpt('--from'))
+  .option('--to <groupId>', 'destination wishlist group id', intOpt('--to'))
+  .option('--tsin <id>', 'TSIN to move (repeatable)', intListOpt('--tsin'))
+  .option('--file <path>', 'JSON payload (or - for stdin)')
+  .option('--unsafe-raw', 'print unredacted JSON (leaks secrets)')
+  .action((options: any, command: Command) => run(command, (ctx) => wishlistMove(ctx, options)));
+
+confirmOpts(withGlobals(wishlist.command('rm-items')))
+  .description('remove products from a wishlist group by TSIN')
+  .allowExcessArguments(false)
+  .argument('<groupId>', 'wishlist group id', intOpt('<groupId>'))
+  .option('--tsin <id>', 'TSIN to remove (repeatable)', intListOpt('--tsin'))
+  .option('--file <path>', 'JSON payload (or - for stdin)')
+  .option('--unsafe-raw', 'print unredacted JSON (leaks secrets)')
+  .action((groupId: number, options: any, command: Command) =>
+    run(command, (ctx) => wishlistRemoveItems(ctx, groupId, options)),
+  );
 
 export async function main(argv = process.argv): Promise<void> {
   if (argv.length <= 2) {

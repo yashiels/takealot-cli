@@ -10,6 +10,7 @@ import { UsageError } from '../lib/errors.js';
 import { parseProductDetails } from '../lib/api-client.js';
 import { infoCommand } from '../commands/info.js';
 import { cartAdd } from '../commands/cart.js';
+import { wishlistAdd } from '../commands/wishlist.js';
 import { reviewsCommand } from '../commands/reviews.js';
 import { recommendCommand, recommendLayout } from '../commands/recommend.js';
 import { registerCatalogue } from '../commands/register.js';
@@ -119,37 +120,15 @@ describe('recommendations against app 4.3.0', () => {
   });
 });
 
-describe('subcommand options reach the subcommand', () => {
-  it('passes --file and --confirm to wishlist add group even though the parent defines them', async () => {
+describe('wishlist add compatibility', () => {
+  it('accepts the legacy group target with --file and --confirm', async () => {
     const { client, calls } = mkClient({ body: {} });
     const ctx = context(client, true);
-    const pending: Promise<void>[] = [];
-    const program = new Command().enablePositionalOptions();
-    registerCatalogue(
-      program,
-      (command) => command,
-      (_command, fn) => {
-        pending.push(fn(ctx));
-      },
-      () => ({ json: true }),
-    );
     const dir = mkdtempSync(path.join(tmpdir(), 'takealot-positional-'));
     const file = path.join(dir, 'body.json');
     writeFileSync(file, JSON.stringify({ products: [{ id: 7 }] }));
     const stdout = captureStdout();
-    await program.parseAsync([
-      'node',
-      'takealot',
-      'wishlist',
-      'add',
-      'group',
-      '42',
-      '--file',
-      file,
-      '--confirm',
-      '--yes',
-    ]);
-    await Promise.all(pending);
+    await wishlistAdd(ctx, 'group', '42', { file, confirm: true, yes: true });
     stdout.restore();
     expect(calls).toHaveLength(1);
     expect(calls[0]!.init.method).toBe('POST');

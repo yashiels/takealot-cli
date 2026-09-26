@@ -220,9 +220,33 @@ Also accepts `from`/`to`/`page_size`. Paging is **0-indexed**; iterate `page_num
 
 ### Wishlists
 
-```
-GET /customers/{customer_id}/wishlists/summary
-```
+Wishlist writes use the request DTOs from the Android 4.3.0 app. Group ids, SKU ids, and TSINs are integers.
+
+| Operation                             | Endpoint                                                         | JSON body                                                                |
+| ------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| List groups                           | `GET /customers/{customer_id}/wishlists`                         | none                                                                     |
+| Summary                               | `GET /customers/{customer_id}/wishlists/summary`                 | none                                                                     |
+| Create group                          | `POST /customers/{customer_id}/wishlists`                        | `{"name":"Wish List"}`                                                   |
+| Rename group                          | `PUT /customers/{customer_id}/wishlists/{group_id}`              | `{"name":"New name"}`                                                    |
+| Delete group                          | `DELETE /customers/{customer_id}/wishlists/{group_id}`           | none                                                                     |
+| List group items                      | `GET /customers/{customer_id}/wishlists/{group_id}/items`        | none                                                                     |
+| Add by SKU                            | `POST /customers/{customer_id}/wishlists/{group_id}/items`       | `{"products":[{"sku":82448522}]}`                                        |
+| Add by TSIN                           | `POST /customers/{customer_id}/wishlists/{group_id}/items`       | `{"products":[{"tsin":104146086}]}`                                      |
+| Add to last-used group by SKU or TSIN | `POST /customers/{customer_id}/wishlists/last_used/items`        | `{"products":[{"sku":82448522}]}` or `{"products":[{"tsin":104146086}]}` |
+| Move items                            | `PUT /customers/{customer_id}/wishlists/items/move`              | `{"from":2181365,"to":[27948686],"products":[{"tsin":104146086}]}`       |
+| Replace SKU group membership          | `PUT /customers/{customer_id}/wishlists/items/pid/{sku_id}`      | `{"reset":false,"groups":[2181365]}`                                     |
+| Replace TSIN group membership         | `PUT /customers/{customer_id}/wishlists/items/tsin/{tsin_id}`    | `{"reset":false,"groups":[2181365]}`                                     |
+| Remove by SKU                         | `DELETE /customers/{customer_id}/wishlists/items/pid/{sku_id}`   | none                                                                     |
+| Remove by TSIN                        | `DELETE /customers/{customer_id}/wishlists/items/tsin/{tsin_id}` | none                                                                     |
+| Bulk remove                           | `DELETE /customers/{customer_id}/wishlists/{group_id}/items`     | `{"products":[{"tsin":104146086}]}`                                      |
+| Shared group                          | `GET /customers/wishlists/{shared_group_id}`                     | none                                                                     |
+| Recommendations                       | `GET /recommend/wishlist`                                        | none                                                                     |
+| Recommendations for PLIDs             | `GET /recommend/wishlist/{plids}`                                | none                                                                     |
+
+The web bundle also uses `PUT /customers/{customer_id}/wishlists/items/tsin/{tsin_id}/move` with `{"from":2181365,"to":27948686}`. This endpoint is absent from the Android 4.3.0 Retrofit interface, so the catalogue records it as an excluded web-only row rather than exposing it through the mobile CLI.
+
+Typed writes avoid hand-authored payloads: `wishlist add <groupId> --sku N`, `wishlist add <groupId> --plid P`, `wishlist move --from G --to G --tsin N`, and `wishlist rm-items <groupId> --tsin N`. Repeat `--sku` or `--tsin` for multiple products. Each command accepts `--file` as an alternative and uses the normal dry-run/`--confirm` gate.
+For compatibility, `wishlist add --file payload.json` without a group id still targets the last-used group.
 
 ### Credits Balance
 
@@ -249,6 +273,6 @@ v4.2.2; paths re-checked against the v4.3.0 Retrofit surface, build 800751, API 
 **`docs/endpoints-catalogue.json`** — one row per endpoint with
 `{domain, method, path, auth, encoding, mutating, excluded, command}`. It is the source of truth
 for the CLI's coverage: a contract test drives every non-excluded row and asserts the exact
-request. The catalogue has 197 rows: 170 active command endpoints and 27 excluded rows, including
-22 order/payment paths plus telemetry, ads, and internal token refresh. API base for authenticated
+request. The catalogue has 198 rows: 170 active command endpoints and 28 excluded rows, including
+22 order/payment paths plus telemetry, ads, internal token refresh, and the documented web-only wishlist move. API base for authenticated
 calls: `v-1-18-0`.
