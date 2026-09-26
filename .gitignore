@@ -3,3 +3,4 @@ reference/
 node_modules/
 dist/
 .worktrees
+.*.bun-build

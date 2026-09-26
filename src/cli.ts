@@ -336,4 +336,15 @@ export async function main(argv = process.argv): Promise<void> {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) void main();
+function invokedAsEntrypoint(): boolean {
+  if ((import.meta as { main?: boolean }).main === true) return true;
+  const entry = process.argv[1];
+  if (!entry) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(entry)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (invokedAsEntrypoint()) void main();
