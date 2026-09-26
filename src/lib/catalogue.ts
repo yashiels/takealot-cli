@@ -1,7 +1,8 @@
 /**
  * The endpoint catalogue — the single, authoritative map of every Takealot
- * mobile-API endpoint the app exposes (extracted from the decompiled APK v4.2.2;
- * see docs/MOBILE-API.md and the domain grouping in the repo docs).
+ * mobile-API endpoint the app exposes (v4.2.2 catalogue; paths re-checked against
+ * the v4.3.0 Retrofit surface (build 800751, API v-1-18-0), live-verified for the
+ * commands exercised in PR2; see docs/MOBILE-API.md and the repo docs).
  *
  * This TS array is the runtime source; `docs/endpoints-catalogue.json` is the
  * committed frozen artifact generated from it (a test asserts they are identical,

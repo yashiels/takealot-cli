@@ -10,24 +10,37 @@ takealot-cli/
 │   ├── cli.ts                   # CLI entry point — Commander program wiring
 │   ├── types.ts                 # Shared TypeScript types
 │   ├── commands/
+│   │   ├── cards.ts             # redacted card list + remove by last four digits
 │   │   ├── cart.ts              # cart show / add / basket / clear
-│   │   ├── checkout.ts          # checkout (dry-run) + --confirm
+│   │   ├── checkout.ts          # read-only checkout preview
 │   │   ├── config.ts            # config show
+│   │   ├── generic.ts           # dry-run gate + form/submit command helpers
+│   │   ├── info.ts              # typed product detail variants
 │   │   ├── login.ts             # login / --reset
 │   │   ├── orders.ts            # orders list + orders show <id>
 │   │   ├── preferences.ts       # preferences show / refresh
+│   │   ├── recommend.ts         # recommendation layout + model lookup
+│   │   ├── register.ts          # catalogue-driven command registration
+│   │   ├── reviews.ts           # paginated public product reviews
 │   │   └── search.ts            # search <query> [--limit] [--json]
 │   ├── lib/
-│   │   ├── api-client.ts        # Takealot mobile API — Android UA, all HTTP calls
-│   │   ├── auth.ts              # Token management + auto-refresh + 2FA/OTP
-│   │   ├── checkout.ts          # Checkout flow helpers
+│   │   ├── api-client.ts        # Takealot API calls except fixed login/refresh paths
+│   │   ├── auth.ts              # Login/refresh transport + token management + 2FA/OTP
+│   │   ├── catalogue.ts         # frozen endpoint definitions + blocked payment set
+│   │   ├── checkout.ts          # read-only checkout response parser
 │   │   ├── config.ts            # XDG config dir (~/.config/takealot-cli/)
 │   │   ├── context.ts           # GlobalOptions + Context passed to commands
+│   │   ├── device.ts            # stable persisted Android device profile
+│   │   ├── errors.ts            # usage/payment/unsafe URL errors
 │   │   ├── preferences.ts       # Preference engine (order-history ranking)
 │   │   ├── prompt.ts            # Interactive terminal prompts (inquirer-style)
+│   │   ├── redact.ts            # recursive secret redaction
 │   │   └── ui.ts                # Console output helpers / colour
 │   └── __tests__/
-│       └── cli.test.ts          # Smoke tests via compiled dist/cli.js
+│       ├── fixtures/4.3.0/      # redacted app response fixtures
+│       ├── cli.test.ts          # smoke tests via compiled dist/cli.js
+│       ├── payment-block.test.ts # transport security-boundary tests
+│       └── read-fixes.test.ts   # 4.3.0 response and path regressions
 ├── .github/workflows/
 │   ├── ci.yml                   # Typecheck on push / PR
 │   ├── release-impl.yml         # Release implementation details
@@ -84,6 +97,7 @@ See `docs/MOBILE-API.md` for the full request/response format.
 - **Preference engine must remain.** The ranking logic in `src/lib/preferences.ts` is a core feature, not optional.
 - **No browser automation.** Do not introduce Playwright, Puppeteer, or any headless browser dependency.
 - **Auth via saved credentials + optional OTP.** First login may require OTP (interactive), but subsequent sessions use cached tokens + auto-refresh. Do not prompt for credentials on every command.
+- **Never add order-placement or payment code.** `PAYMENT_BLOCKED` and the `send()` transport guard are a security boundary; tests must keep proving blocked endpoints are unreachable.
 
 ## CI
 

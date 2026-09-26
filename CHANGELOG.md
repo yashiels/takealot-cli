@@ -29,6 +29,38 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Data-section writes** use a locally-bound `form` → `submit --file <json>` pair (foreign/stale
   field ids rejected against the fetched form; no assumed server token).
 
+### Removed — BREAKING
+
+- **Order placement and every payment path.** The CLI no longer completes checkout, creates an
+  order, submits card payment, follows 3DS, pays with eBucks, or performs Takealot Plus payment,
+  signup, reactivation, upgrade, or downgrade operations. These endpoints are now blocked at
+  the transport boundary; the account owner completes checkout in the Takealot app.
+- `checkout --confirm`, `checkout resume`, `checkout reset`, payment challenge handling, saved-card
+  payment references, and persisted pending-order recovery state.
+
+### Changed
+
+- **Checkout is read-only.** `checkout` now returns items, totals, amount due, shipping method,
+  incomplete sections, and `payInApp: true`; human output directs the owner to the Takealot app.
+- The API transport now permits only the exact `https://api.takealot.com` origin, refuses
+  redirects and unsafe paths, and blocks all catalogue payment paths before any fetch.
+- Saved-card output contains bank, scheme, last four digits, expiry, selected state, and enabled
+  state without exposing references. `cards rm --last4` resolves the reference internally.
+- Account-security writes require `--i-know` with `--confirm`. Usage and blocked-payment errors
+  exit 4, authentication errors exit 3, and JSON errors use `{error, code, status?}`.
+- New device profiles use Android app 4.3.0 build 800751. Existing credentials keep their stored
+  profile so trusted-device identity remains stable.
+
+### Fixed
+
+- Public reviews now send a bare numeric PLID with `page` and optional `sort`.
+- Recommendations now require a model and `display_type=product`; `recommend layout` exposes
+  model keys for a location and unsupported `pdp` requests fail locally.
+- Invoice, credit-note, and invoice business-detail commands resolve numeric order ids to the
+  API's `obfuscated_order_id` before making the request.
+- Product detail and `cart add --plid` now read the 4.3.0 buybox shape, expose variants, and
+  refuse to guess a SKU for multi-variant listings.
+
 ### Security / safety
 
 - **Mutation gating:** every state-changing command is dry-run by default and prints the exact
