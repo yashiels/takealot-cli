@@ -13,6 +13,10 @@ const BESPOKE_IDS = new Set([
   'reviews.public',
   'reco.location',
   'reco.location.layout',
+  'wishlist.items.add',
+  'wishlist.items.addLast',
+  'wishlist.items.move',
+  'wishlist.items.bulkRemove',
 ]);
 
 interface RunFn {

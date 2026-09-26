@@ -48,7 +48,7 @@ function resetOptionValues(): void {
 function optionValue(option: Option): string {
   if (option.attributeName() === 'query') return 'key=value';
   if (option.attributeName() === 'file') return '/tmp/takealot-options.json';
-  return 'value';
+  return '4242';
 }
 
 function appendOption(argv: string[], option: Option): void {
@@ -95,12 +95,17 @@ describe('global option positions', () => {
 });
 
 describe('misplaced ancestor options', () => {
-  it('rejects wishlist write options before the leaf without sending a request', async () => {
+  it('binds wishlist add options to add because wishlist does not define them', async () => {
     resetOptionValues();
-    const output: string[] = [];
-    vi.spyOn(process.stdout, 'write').mockImplementation((value: string | Uint8Array) => {
-      output.push(String(value));
-      return true;
+    const add = commandAt(['wishlist', 'add']);
+    const wishlist = add.parent!;
+    expect(wishlist.options.map((option) => option.attributeName())).not.toContain('confirm');
+    expect(wishlist.options.map((option) => option.attributeName())).not.toContain('file');
+    let received:
+      | { target: string | undefined; groupId: string | undefined; options: Record<string, unknown> }
+      | undefined;
+    add.action((target: string | undefined, groupId: string | undefined, options: Record<string, unknown>) => {
+      received = { target, groupId, options };
     });
     const fetchMock = vi.spyOn(globalThis, 'fetch');
     await program.parseAsync([
@@ -115,10 +120,11 @@ describe('misplaced ancestor options', () => {
       '42',
       '--json',
     ]);
-    expect(process.exitCode).toBe(4);
-    expect(JSON.parse(output.join(''))).toEqual({
-      error: '--confirm must come after "group": takealot wishlist add group <id> --confirm',
-      code: 'usage_error',
+    expect(process.exitCode).toBeUndefined();
+    expect(received).toEqual({
+      target: 'group',
+      groupId: '42',
+      options: expect.objectContaining({ confirm: true, file: '/tmp/takealot-options.json' }),
     });
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -126,7 +132,10 @@ describe('misplaced ancestor options', () => {
 
 describe('parent and subcommand option collisions', () => {
   it('discovers every current collision without a hand-maintained command list', () => {
-    expect(collisions).toHaveLength(38);
+    expect(collisions).toHaveLength(37);
+    expect(collisions.map((collision) => collision.pathLabel)).toEqual(
+      expect.arrayContaining(['wishlist add', 'wishlist move', 'wishlist rm-items']),
+    );
   });
 
   it.each(collisions)(
@@ -146,7 +155,7 @@ describe('parent and subcommand option collisions', () => {
         process.exitCode = undefined;
         const argv = [...path];
         for (const argument of target.registeredArguments) {
-          if (argument.required) argv.push('value');
+          if (argument.required) argv.push(argument.name().endsWith('Id') ? '42' : 'value');
         }
         for (const mandatoryOption of target.options) {
           if (
@@ -168,7 +177,8 @@ describe('parent and subcommand option collisions', () => {
         if (sharedOption.variadic) ancestorArgv.push('--json');
         ancestorArgv.push(path.at(-1)!);
         for (const argument of target.registeredArguments) {
-          if (argument.required) ancestorArgv.push('value');
+          if (argument.required)
+            ancestorArgv.push(argument.name().endsWith('Id') ? '42' : 'value');
         }
         for (const mandatoryOption of target.options) {
           appendOption(ancestorArgv, mandatoryOption);
