@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
@@ -115,6 +116,45 @@ describe('recommendations against app 4.3.0', () => {
       recommendCommand(context(client), 'other', { model: 'x', limit: 3 }),
     ).rejects.toThrow(/valid values: home-page, add-to-cart, landing-page, domain/);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('subcommand options reach the subcommand', () => {
+  it('passes --file and --confirm to wishlist add group even though the parent defines them', async () => {
+    const { client, calls } = mkClient({ body: {} });
+    const ctx = context(client, true);
+    const pending: Promise<void>[] = [];
+    const program = new Command().enablePositionalOptions();
+    registerCatalogue(
+      program,
+      (command) => command,
+      (_command, fn) => {
+        pending.push(fn(ctx));
+      },
+      () => ({ json: true }),
+    );
+    const dir = mkdtempSync(path.join(tmpdir(), 'takealot-positional-'));
+    const file = path.join(dir, 'body.json');
+    writeFileSync(file, JSON.stringify({ products: [{ id: 7 }] }));
+    const stdout = captureStdout();
+    await program.parseAsync([
+      'node',
+      'takealot',
+      'wishlist',
+      'add',
+      'group',
+      '42',
+      '--file',
+      file,
+      '--confirm',
+      '--yes',
+    ]);
+    await Promise.all(pending);
+    stdout.restore();
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.init.method).toBe('POST');
+    expect(calls[0]!.url).toMatch(/\/customers\/12345\/wishlists\/42\/items$/);
+    expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ products: [{ id: 7 }] });
   });
 });
 

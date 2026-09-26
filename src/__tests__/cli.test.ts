@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { execFileSync, spawnSync } from 'child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'url';
 
 // Resolve compiled CLI entrypoint relative to this test file (ESM-safe)
@@ -16,7 +17,12 @@ describe('takealot-cli smoke tests', () => {
 
   it('should print version on --version', () => {
     const out = execFileSync('node', [cli, '--version'], { encoding: 'utf8' });
-    expect(out.trim()).toMatch(/\d+\.\d+\.\d+/);
+    const packageJson = JSON.parse(
+      readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+    ) as {
+      version: string;
+    };
+    expect(out.trim()).toBe(packageJson.version);
   });
 
   it('registers only read-only checkout plus start and submit', () => {

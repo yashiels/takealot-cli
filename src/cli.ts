@@ -8,7 +8,7 @@
  */
 
 import { Command, CommanderError } from 'commander';
-import { realpathSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { Context, OtpFlowError, type GlobalOptions } from './lib/context.js';
 import { ApiError } from './lib/api-client.js';
@@ -30,8 +30,22 @@ import { registerCatalogue } from './commands/register.js';
 import { mutateEndpoint, readBodyFromFlags } from './commands/generic.js';
 
 declare const __TAKEALOT_VERSION__: string | undefined;
+const packageVersion = (): string => {
+  try {
+    const packageJson = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as {
+      version?: unknown;
+    };
+    return typeof packageJson.version === 'string' ? packageJson.version : '0.0.0-dev';
+  } catch {
+    return '0.0.0-dev';
+  }
+};
 const VERSION =
-  typeof __TAKEALOT_VERSION__ === 'string' && __TAKEALOT_VERSION__ ? __TAKEALOT_VERSION__ : '0.6.1';
+  typeof __TAKEALOT_VERSION__ === 'string' && __TAKEALOT_VERSION__
+    ? __TAKEALOT_VERSION__
+    : packageVersion();
 
 const intOpt = (name: string) => (v: string) => {
   const n = parseInt(v, 10);
@@ -47,7 +61,7 @@ function withGlobals(cmd: Command): Command {
 }
 
 /** Collect --json/--verbose from this command and all its ancestors. */
-function globalFlags(command: Command): GlobalOptions {
+export function globalFlags(command: Command): GlobalOptions {
   let json = false;
   let verbose = false;
   for (let cmd: Command | undefined = command; cmd; cmd = cmd.parent ?? undefined) {
@@ -56,6 +70,37 @@ function globalFlags(command: Command): GlobalOptions {
     if (opts.verbose) verbose = true;
   }
   return { json, verbose };
+}
+
+function commandUsage(command: Command): string {
+  const names: string[] = [];
+  for (let current: Command | undefined = command; current; current = current.parent ?? undefined) {
+    names.unshift(current.name());
+  }
+  const argumentsUsage = command.registeredArguments.map((argument) => {
+    const name = argument.name().endsWith('Id') ? 'id' : argument.name();
+    return argument.required ? `<${name}>` : `[${name}]`;
+  });
+  return [...names, ...argumentsUsage].join(' ');
+}
+
+function rejectAncestorOptions(command: Command): void {
+  for (let ancestor = command.parent; ancestor?.parent; ancestor = ancestor.parent) {
+    const misplaced = [...ancestor.options]
+      .reverse()
+      .find(
+        (option) =>
+          option.attributeName() !== 'json' &&
+          option.attributeName() !== 'verbose' &&
+          ancestor.getOptionValueSource(option.attributeName()) === 'cli',
+      );
+    if (misplaced) {
+      const flag = misplaced.long ?? misplaced.short ?? misplaced.flags;
+      throw new UsageError(
+        `${flag} must come after "${command.name()}": ${commandUsage(command)} ${flag}`,
+      );
+    }
+  }
 }
 
 /** Build a Context for the invocation and run the handler with unified error handling. */
@@ -79,6 +124,7 @@ export async function run(command: Command, fn: (ctx: Context) => Promise<void>)
   const flags = globalFlags(command);
   const ctx = new Context(flags);
   try {
+    rejectAncestorOptions(command);
     await fn(ctx);
   } catch (err) {
     const details = errorDetails(err);
@@ -94,7 +140,7 @@ export async function run(command: Command, fn: (ctx: Context) => Promise<void>)
   }
 }
 
-const program = new Command();
+export const program = new Command();
 
 program.exitOverride().configureOutput({
   writeErr: (text) => {
@@ -106,6 +152,7 @@ withGlobals(program)
   .name('takealot')
   .description('Command-line tool for Takealot.com — search, cart, checkout preview, and order history.')
   .version(VERSION, '-V, --version', 'print the version')
+  .enablePositionalOptions()
   .showHelpAfterError();
 
 // ---- search ----
