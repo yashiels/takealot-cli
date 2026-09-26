@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { Command } from 'commander';
 import { mkClient } from './mkclient.js';
 import { renderRaw } from '../lib/ui.js';
 
@@ -46,25 +47,29 @@ let tmp: string;
 let prevXdg: string | undefined;
 let prevEmail: string | undefined;
 let prevPw: string | undefined;
+let previousExitCode: typeof process.exitCode;
 
 beforeEach(() => {
   prevXdg = process.env.XDG_CONFIG_HOME;
   prevEmail = process.env.TAKEALOT_EMAIL;
   prevPw = process.env.TAKEALOT_PASSWORD;
+  previousExitCode = process.exitCode;
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tk-shop-'));
   process.env.XDG_CONFIG_HOME = tmp;
   process.env.TAKEALOT_EMAIL = 'shopper@example.com';
   process.env.TAKEALOT_PASSWORD = 'pw';
+  process.exitCode = undefined;
 });
 afterEach(() => {
   process.env.XDG_CONFIG_HOME = prevXdg;
   process.env.TAKEALOT_EMAIL = prevEmail;
   process.env.TAKEALOT_PASSWORD = prevPw;
+  process.exitCode = previousExitCode;
   fs.rmSync(tmp, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
-async function seededContext() {
+async function seededContext(verbose = false) {
   vi.resetModules();
   const cfg = await import('../lib/config.js');
   cfg.saveCredentials({
@@ -82,7 +87,7 @@ async function seededContext() {
     device: { profile: (await import('../lib/device.js')).resolveDeviceProfile({}), did: 'DID' },
   } as any);
   const { Context } = await import('../lib/context.js');
-  return new Context({ json: true, verbose: false });
+  return new Context({ json: true, verbose });
 }
 
 function captureStdout(): { chunks: string[]; restore: () => void } {
@@ -93,6 +98,141 @@ function captureStdout(): { chunks: string[]; restore: () => void } {
   });
   return { chunks, restore: () => spy.mockRestore() };
 }
+
+function captureStderr(): { chunks: string[]; restore: () => void } {
+  const chunks: string[] = [];
+  const spy = vi.spyOn(process.stderr, 'write').mockImplementation((s: any) => {
+    chunks.push(String(s));
+    return true;
+  });
+  return { chunks, restore: () => spy.mockRestore() };
+}
+
+const cartBody = (lines: Array<{ skuId: number; quantity: number; title: string }>) => ({
+  products: lines.map((line) => ({ product_id: line.skuId, title: line.title, selling_price: 10 })),
+  cart_items: lines.map((line) => ({ product_id: line.skuId, quantity: line.quantity, sub_total: line.quantity * 10 })),
+});
+
+const response = (body: unknown): Response => ({
+  ok: true,
+  status: 200,
+  statusText: 'OK',
+  headers: new Headers({ 'content-type': 'application/json' }),
+  text: async () => JSON.stringify(body),
+  json: async () => body,
+}) as unknown as Response;
+
+const threeLines = [
+  { skuId: 101, quantity: 1, title: 'One' },
+  { skuId: 202, quantity: 2, title: 'Two' },
+  { skuId: 303, quantity: 3, title: 'Three' },
+];
+
+describe('cart mutation guard', () => {
+  it('detects a vanished duplicate line of the same non-target SKU', async () => {
+    const before = [...threeLines, { skuId: 202, quantity: 2, title: 'Two again' }];
+    const after = [threeLines[1]!, threeLines[2]!];
+    const replies = [cartBody(before), {}, cartBody(after)];
+    globalThis.fetch = vi.fn(async () => response(replies.shift())) as any;
+    const ctx = await seededContext(false);
+    const { cartRemove } = await import('../commands/cart.js');
+    const stdout = captureStdout();
+    const stderr = captureStderr();
+    await cartRemove(ctx, 101, { confirm: true, yes: true });
+    const result = JSON.parse(stdout.chunks.join(''));
+    stdout.restore();
+    stderr.restore();
+    expect(result.unexpectedRemovals).toEqual([{ skuId: 202, quantity: 2, title: 'Two' }]);
+    expect(process.exitCode).toBe(1);
+    process.exitCode = undefined;
+  });
+
+  it('removes one SKU while preserving the other lines and logs all three auth contexts', async () => {
+    const replies = [cartBody(threeLines), {}, cartBody(threeLines.slice(1))];
+    const fetchMock = vi.fn(async (_url: string | URL, _init?: RequestInit) => response(replies.shift()));
+    globalThis.fetch = fetchMock as any;
+    const ctx = await seededContext(true);
+    const { cartRemove } = await import('../commands/cart.js');
+    const stdout = captureStdout();
+    const stderr = captureStderr();
+    await cartRemove(ctx, 101, { confirm: true, yes: true });
+    const result = JSON.parse(stdout.chunks.join(''));
+    stdout.restore();
+    stderr.restore();
+    expect(result).toMatchObject({ removed: true, remaining: 2 });
+    expect(result).not.toHaveProperty('unexpectedRemovals');
+    expect(fetchMock.mock.calls.map((call) => (call[1] as RequestInit).method ?? 'GET')).toEqual(['GET', 'DELETE', 'GET']);
+    const verbose = stderr.chunks.join('');
+    expect(verbose.match(/customerId=12345 authGeneration=0/g)).toHaveLength(3);
+    expect(verbose).toContain('DELETE body {"products":[{"id":101}]}');
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('reports unexpectedRemovals and exits 1 when the server wipes the cart', async () => {
+    const replies = [cartBody(threeLines), {}, cartBody([])];
+    const fetchMock = vi.fn(async (_url: string | URL, _init?: RequestInit) => response(replies.shift()));
+    globalThis.fetch = fetchMock as any;
+    const ctx = await seededContext();
+    const { cartRemove } = await import('../commands/cart.js');
+    const stdout = captureStdout();
+    const stderr = captureStderr();
+    await cartRemove(ctx, 101, { confirm: true, yes: true });
+    const result = JSON.parse(stdout.chunks.join(''));
+    stdout.restore();
+    stderr.restore();
+    expect(result.unexpectedRemovals).toEqual(threeLines.slice(1));
+    expect(stderr.chunks.join('')).toContain('CART SAFETY CHECK FAILED');
+    expect(process.exitCode).toBe(1);
+  });
+
+  it('guards set-qty against collateral cart changes', async () => {
+    const changed = [{ ...threeLines[0]!, quantity: 4 }, { ...threeLines[1]!, quantity: 1 }, threeLines[2]!];
+    const replies = [cartBody(threeLines), {}, cartBody(changed)];
+    const fetchMock = vi.fn(async (_url: string | URL, _init?: RequestInit) => response(replies.shift()));
+    globalThis.fetch = fetchMock as any;
+    const ctx = await seededContext();
+    const { cartSetQty } = await import('../commands/cart.js');
+    const stdout = captureStdout();
+    const stderr = captureStderr();
+    await cartSetQty(ctx, 101, 4, { confirm: true, yes: true });
+    const result = JSON.parse(stdout.chunks.join(''));
+    stdout.restore();
+    stderr.restore();
+    expect(result.unexpectedRemovals).toEqual([threeLines[1]]);
+    expect(process.exitCode).toBe(1);
+  });
+
+  it('rejects a missing SKU with exit 4 and sends no DELETE', async () => {
+    const fetchMock = vi.fn(async (_url: string | URL, _init?: RequestInit) => response(cartBody(threeLines)));
+    globalThis.fetch = fetchMock as any;
+    await seededContext();
+    const { run } = await import('../cli.js');
+    const { cartRemove } = await import('../commands/cart.js');
+    const command = new Command().option('--json');
+    command.setOptionValue('json', true);
+    const stdout = captureStdout();
+    await run(command, (ctx) => cartRemove(ctx, 404, { confirm: true, yes: true }));
+    const result = JSON.parse(stdout.chunks.join(''));
+    stdout.restore();
+    expect(result).toMatchObject({ code: 'usage_error', error: 'SKU 404 is not in the current cart' });
+    expect(process.exitCode).toBe(4);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((fetchMock.mock.calls[0]![1] as RequestInit).method ?? 'GET').toBe('GET');
+  });
+
+  it('lists the cart lines that would remain in a remove dry run', async () => {
+    const fetchMock = vi.fn(async (_url: string | URL, _init?: RequestInit) => response(cartBody(threeLines)));
+    globalThis.fetch = fetchMock as any;
+    const ctx = await seededContext();
+    const { cartRemove } = await import('../commands/cart.js');
+    const stdout = captureStdout();
+    await cartRemove(ctx, 101);
+    const result = JSON.parse(stdout.chunks.join(''));
+    stdout.restore();
+    expect(result.request.remaining).toEqual(threeLines.slice(1));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('mutation gating', () => {
   it('a mutating command is a NO-OP under default dry-run (no write fetch)', async () => {

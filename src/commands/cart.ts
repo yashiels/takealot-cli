@@ -2,6 +2,8 @@ import type { Context } from '../lib/context.js';
 import { c, rand } from '../lib/ui.js';
 import { gate } from './generic.js';
 import type { PreferenceMatch } from '../lib/preferences.js';
+import { UsageError } from '../lib/errors.js';
+import type { CartItem, CartResult } from '../types.js';
 
 export interface CartWriteFlags {
   confirm?: boolean;
@@ -14,6 +16,54 @@ const REASON_LABEL: Record<PreferenceMatch['reason'], string> = {
   'preferred-brand': 'preferred brand',
   'top-result': 'top result',
 };
+
+type CartLine = { skuId: number; quantity: number; title: string };
+
+const skuOf = (item: CartItem): number => item.skuId ?? item.productId;
+
+const cartLines = (cart: CartResult): CartLine[] =>
+  cart.items.map((item) => ({ skuId: skuOf(item), quantity: item.quantity, title: item.title }));
+
+const quantityBySku = (cart: CartResult): Map<number, number> => {
+  const totals = new Map<number, number>();
+  for (const item of cart.items) totals.set(skuOf(item), (totals.get(skuOf(item)) ?? 0) + item.quantity);
+  return totals;
+};
+
+const changedLines = (
+  before: CartResult,
+  after: CartResult,
+  targetSkuId: number,
+  targetQuantity: number | null,
+): CartLine[] => {
+  const beforeTotals = quantityBySku(before);
+  const afterTotals = quantityBySku(after);
+  const reported = new Set<number>();
+  return cartLines(before).filter((line) => {
+    if (line.skuId === targetSkuId || reported.has(line.skuId)) return false;
+    if ((afterTotals.get(line.skuId) ?? 0) === beforeTotals.get(line.skuId)) return false;
+    reported.add(line.skuId);
+    return true;
+  }).concat(
+    targetQuantity !== null && (afterTotals.get(targetSkuId) ?? 0) !== targetQuantity
+      ? cartLines(before).filter((line) => line.skuId === targetSkuId).slice(0, 1)
+      : [],
+  );
+};
+
+const previewLines = (lines: CartLine[]): string =>
+  lines.length ? lines.map((line) => `${line.quantity}× ${line.title} (SKU ${line.skuId})`).join('; ') : 'none';
+
+function warnRestoration(ctx: Context, unexpected: CartLine[], after: CartResult): void {
+  const remaining = new Set(after.items.map(skuOf));
+  ctx.logger.error('CART SAFETY CHECK FAILED: other cart lines disappeared or changed quantity.');
+  for (const line of unexpected) {
+    const command = remaining.has(line.skuId)
+      ? `takealot cart set-qty ${line.skuId} ${line.quantity} --confirm --yes`
+      : `takealot cart add --sku ${line.skuId} --qty ${line.quantity} --confirm --yes`;
+    ctx.logger.warn(`Restore ${line.title}: ${command}`);
+  }
+}
 
 /** Parse an optional leading quantity, e.g. "3 pencils" → { qty: 3, query: "pencils" }. */
 function parseQuantity(raw: string): { qty: number; query: string } {
@@ -154,10 +204,25 @@ export async function cartClear(ctx: Context, flags: CartWriteFlags = {}): Promi
 export async function cartSetQty(ctx: Context, skuId: number, quantity: number, flags: CartWriteFlags = {}): Promise<void> {
   await ctx.ensureCredentials();
   if (!Number.isFinite(quantity) || quantity < 1) throw new Error('quantity must be a positive integer');
-  if (!(await gate(ctx, flags, { action: `set SKU ${skuId} quantity to ${quantity}` }))) return;
+  const before = await ctx.client.getCart();
+  if (!before.items.some((item) => skuOf(item) === skuId)) throw new UsageError(`SKU ${skuId} is not in the current cart`);
+  const expected = cartLines(before).map((line) => line.skuId === skuId ? { ...line, quantity } : line);
+  const body = { products: [{ id: skuId, quantity }] };
+  const request = { ...ctx.client.describeCall('cart.update', { body }), remaining: expected };
+  if (!(await gate(ctx, flags, { action: `set SKU ${skuId} quantity to ${quantity}; lines after: ${previewLines(expected)}`, request }))) return;
   ctx.logger.info(`✏️  Setting SKU ${skuId} → qty ${quantity}…`);
   await ctx.client.setCartItemQuantity(skuId, quantity);
   const cart = await ctx.client.getCart();
+  const unexpectedRemovals = changedLines(before, cart, skuId, quantity);
+  if (unexpectedRemovals.length) {
+    warnRestoration(ctx, unexpectedRemovals, cart);
+    ctx.logger.result(
+      () => process.stdout.write(`${c.red('✗')} Cart update changed other lines; restore them with the commands above.\n`),
+      { updated: false, skuId, quantity, remaining: cart.items.length, total: cart.total, unexpectedRemovals },
+    );
+    process.exitCode = 1;
+    return;
+  }
   ctx.logger.result(
     () => process.stdout.write(`${c.green('✓')} Updated SKU ${skuId} to ${quantity}. Total ${rand(cart.total)}\n`),
     { updated: true, skuId, quantity, total: cart.total },
@@ -167,10 +232,25 @@ export async function cartSetQty(ctx: Context, skuId: number, quantity: number, 
 /** `cart remove <sku>` — remove one cart line by its buyable SKU id. */
 export async function cartRemove(ctx: Context, skuId: number, flags: CartWriteFlags = {}): Promise<void> {
   await ctx.ensureCredentials();
-  if (!(await gate(ctx, flags, { action: `remove SKU ${skuId} from the cart` }))) return;
+  const before = await ctx.client.getCart();
+  if (!before.items.some((item) => skuOf(item) === skuId)) throw new UsageError(`SKU ${skuId} is not in the current cart`);
+  const remaining = cartLines(before).filter((line) => line.skuId !== skuId);
+  const body = { products: [{ id: skuId }] };
+  const request = { ...ctx.client.describeCall('cart.remove', { body }), remaining };
+  if (!(await gate(ctx, flags, { action: `remove SKU ${skuId} from the cart; lines remaining: ${previewLines(remaining)}`, request }))) return;
   ctx.logger.info(`➖ Removing SKU ${skuId}…`);
   await ctx.client.removeCartItem(skuId);
   const cart = await ctx.client.getCart();
+  const unexpectedRemovals = changedLines(before, cart, skuId, null);
+  if (unexpectedRemovals.length) {
+    warnRestoration(ctx, unexpectedRemovals, cart);
+    ctx.logger.result(
+      () => process.stdout.write(`${c.red('✗')} Cart removal changed other lines; restore them with the commands above.\n`),
+      { removed: !cart.items.some((item) => skuOf(item) === skuId), skuId, remaining: cart.items.length, total: cart.total, unexpectedRemovals },
+    );
+    process.exitCode = 1;
+    return;
+  }
   ctx.logger.result(
     () => process.stdout.write(`${c.green('✓')} Removed SKU ${skuId}. ${cart.items.length} item(s) left.\n`),
     { removed: true, skuId, remaining: cart.items.length, total: cart.total },
