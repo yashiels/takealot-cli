@@ -34,7 +34,41 @@ export interface EndpointRow {
 }
 
 type Row = Omit<EndpointRow, 'base' | 'excluded'> & { base?: Base; excluded?: boolean };
-const r = (row: Row): EndpointRow => ({ base: 'mobile', excluded: false, ...row });
+export const PAYMENT_BLOCKED = new Set([
+  'checkout.complete',
+  'checkout.order',
+  'checkout.order.update',
+  'checkout.payment',
+  'checkout.payment.complete',
+  'checkout.payhost',
+  'ebucks.requestotp',
+  'ebucks.login',
+  'ebucks.pay',
+  'plus.pay',
+  'plus.card.add',
+  'plus.card.payment',
+  'plus.manage.card',
+  'plus.manage.card.form',
+  'plus.signup',
+  'plus.signup.form',
+  'plus.reactivate',
+  'plus.reactivate.form',
+  'plus.manage.upgrade',
+  'plus.manage.upgrade.form',
+  'plus.manage.downgrade',
+  'plus.manage.downgrade.form',
+]);
+
+const r = (row: Row): EndpointRow =>
+  PAYMENT_BLOCKED.has(row.id)
+    ? {
+        ...row,
+        base: row.base ?? 'mobile',
+        excluded: true,
+        command: null,
+        reason: 'payment: pay in the Takealot app',
+      }
+    : { base: 'mobile', excluded: false, ...row };
 
 const CID = { customerId: 12345 };
 

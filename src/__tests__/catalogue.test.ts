@@ -8,6 +8,30 @@ import { mkClient } from './mkclient.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const CATALOGUE_JSON = path.join(repoRoot, 'docs/endpoints-catalogue.json');
+const PAYMENT_BLOCKED_IDS = [
+  'checkout.complete',
+  'checkout.order',
+  'checkout.order.update',
+  'checkout.payment',
+  'checkout.payment.complete',
+  'checkout.payhost',
+  'ebucks.requestotp',
+  'ebucks.login',
+  'ebucks.pay',
+  'plus.pay',
+  'plus.card.add',
+  'plus.card.payment',
+  'plus.manage.card',
+  'plus.manage.card.form',
+  'plus.signup',
+  'plus.signup.form',
+  'plus.reactivate',
+  'plus.reactivate.form',
+  'plus.manage.upgrade',
+  'plus.manage.upgrade.form',
+  'plus.manage.downgrade',
+  'plus.manage.downgrade.form',
+];
 
 describe('endpoint catalogue — coverage', () => {
   it('the frozen docs/endpoints-catalogue.json matches the runtime CATALOGUE', () => {
@@ -27,10 +51,10 @@ describe('endpoint catalogue — coverage', () => {
     }
   });
 
-  it('only telemetry/ads/auth-internal endpoints are excluded', () => {
+  it('only payment, telemetry, ads, and auth-internal endpoints are excluded', () => {
     const excluded = CATALOGUE.filter((e) => e.excluded).map((e) => e.id).sort();
     expect(excluded).toEqual(
-      ['ads.sponsoredDisplay', 'ads.sponsoredProducts', 'auth.refresh', 'config.abtest', 'ute.collect'].sort(),
+      ['ads.sponsoredDisplay', 'ads.sponsoredProducts', 'auth.refresh', 'config.abtest', 'ute.collect', ...PAYMENT_BLOCKED_IDS].sort(),
     );
   });
 

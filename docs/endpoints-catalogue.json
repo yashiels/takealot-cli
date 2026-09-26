@@ -703,8 +703,6 @@
     }
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "checkout.complete",
     "domain": "checkout",
     "method": "POST",
@@ -712,17 +710,18 @@
     "auth": true,
     "encoding": "text",
     "mutating": true,
-    "command": "checkout --confirm",
+    "command": null,
     "sample": {
       "params": {
         "customerId": 12345
       },
       "body": "android"
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "checkout.order",
     "domain": "checkout",
     "method": "GET",
@@ -730,17 +729,18 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "checkout order",
+    "command": null,
     "sample": {
       "params": {
         "customerId": 12345,
         "orderId": "O1"
       }
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "checkout.order.update",
     "domain": "checkout",
     "method": "PUT",
@@ -748,7 +748,7 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "checkout order submit",
+    "command": null,
     "sample": {
       "params": {
         "customerId": 12345,
@@ -758,7 +758,10 @@
         "platform": "android",
         "sections": []
       }
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
     "base": "mobile",
@@ -778,8 +781,6 @@
     }
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "checkout.payment",
     "domain": "checkout",
     "method": "POST",
@@ -787,7 +788,7 @@
     "auth": true,
     "encoding": "form",
     "mutating": true,
-    "command": "checkout --confirm",
+    "command": null,
     "sample": {
       "params": {
         "orderId": "O1"
@@ -797,11 +798,12 @@
         "token_reference": "x",
         "budget_period": "Straight"
       }
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "checkout.payment.complete",
     "domain": "checkout",
     "method": "POST",
@@ -809,7 +811,7 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "checkout resume",
+    "command": null,
     "sample": {
       "params": {
         "orderId": "O1"
@@ -818,7 +820,10 @@
         "platform": "android",
         "status": "success"
       }
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
     "base": "mobile",
@@ -851,8 +856,6 @@
     }
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "checkout.payhost",
     "domain": "cards",
     "method": "GET",
@@ -860,16 +863,17 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "checkout payhost",
+    "command": null,
     "sample": {
       "params": {
         "orderId": "O1"
       }
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "ebucks.requestotp",
     "domain": "cards",
     "method": "GET",
@@ -877,16 +881,17 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "ebucks requestotp",
+    "command": null,
     "sample": {
       "params": {
         "orderId": "O1"
       }
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "ebucks.login",
     "domain": "cards",
     "method": "POST",
@@ -894,17 +899,18 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "ebucks login",
+    "command": null,
     "sample": {
       "params": {
         "orderId": "O1"
       },
       "body": {}
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "ebucks.pay",
     "domain": "cards",
     "method": "POST",
@@ -912,13 +918,16 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "ebucks pay",
+    "command": null,
     "sample": {
       "params": {
         "orderId": "O1"
       },
       "body": {}
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
     "base": "mobile",
@@ -2190,8 +2199,6 @@
     "sample": {}
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.signup.form",
     "domain": "plus",
     "method": "GET",
@@ -2199,16 +2206,17 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "plus signup form",
+    "command": null,
     "sample": {
       "params": {
         "planId": "P1"
       }
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.signup",
     "domain": "plus",
     "method": "PUT",
@@ -2216,17 +2224,18 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "plus signup submit",
+    "command": null,
     "sample": {
       "params": {
         "planId": "P1"
       },
       "body": {}
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.pay",
     "domain": "plus",
     "method": "POST",
@@ -2234,10 +2243,13 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "plus pay",
+    "command": null,
     "sample": {
       "body": {}
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
     "base": "mobile",
@@ -2322,8 +2334,6 @@
     }
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.reactivate.form",
     "domain": "plus",
     "method": "GET",
@@ -2331,12 +2341,13 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "plus reactivate form",
-    "sample": {}
+    "command": null,
+    "sample": {},
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.reactivate",
     "domain": "plus",
     "method": "PUT",
@@ -2344,10 +2355,13 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "plus reactivate submit",
+    "command": null,
     "sample": {
       "body": {}
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
     "base": "mobile",
@@ -2391,8 +2405,6 @@
     "sample": {}
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.manage.upgrade.form",
     "domain": "plus",
     "method": "GET",
@@ -2400,12 +2412,13 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "plus manage upgrade form",
-    "sample": {}
+    "command": null,
+    "sample": {},
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.manage.upgrade",
     "domain": "plus",
     "method": "PUT",
@@ -2413,14 +2426,15 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "plus manage upgrade submit",
+    "command": null,
     "sample": {
       "body": {}
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.manage.downgrade.form",
     "domain": "plus",
     "method": "GET",
@@ -2428,12 +2442,13 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "plus manage downgrade form",
-    "sample": {}
+    "command": null,
+    "sample": {},
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.manage.downgrade",
     "domain": "plus",
     "method": "PUT",
@@ -2441,10 +2456,13 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "plus manage downgrade submit",
+    "command": null,
     "sample": {
       "body": {}
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
     "base": "mobile",
@@ -2475,8 +2493,6 @@
     }
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.manage.card.form",
     "domain": "plus",
     "method": "GET",
@@ -2484,12 +2500,13 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "plus manage card form",
-    "sample": {}
+    "command": null,
+    "sample": {},
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.manage.card",
     "domain": "plus",
     "method": "PUT",
@@ -2497,14 +2514,15 @@
     "auth": true,
     "encoding": "json",
     "mutating": true,
-    "command": "plus manage card submit",
+    "command": null,
     "sample": {
       "body": {}
-    }
+    },
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.card.add",
     "domain": "plus",
     "method": "GET",
@@ -2512,12 +2530,13 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "plus card-add form",
-    "sample": {}
+    "command": null,
+    "sample": {},
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
-    "base": "mobile",
-    "excluded": false,
     "id": "plus.card.payment",
     "domain": "plus",
     "method": "GET",
@@ -2525,8 +2544,11 @@
     "auth": true,
     "encoding": "none",
     "mutating": false,
-    "command": "plus card-payment",
-    "sample": {}
+    "command": null,
+    "sample": {},
+    "base": "mobile",
+    "excluded": true,
+    "reason": "payment: pay in the Takealot app"
   },
   {
     "base": "mobile",

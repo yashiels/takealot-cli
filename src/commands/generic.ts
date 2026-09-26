@@ -14,6 +14,16 @@ import { redact, redactUrl } from '../lib/redact.js';
 import { confirm } from '../lib/prompt.js';
 import { loadFormCache, saveFormCache } from '../lib/config.js';
 import { GATE_EXEMPT_MUTATIONS } from '../lib/catalogue.js';
+import { UsageError } from '../lib/errors.js';
+
+export const SECURITY_WRITES = new Set([
+  'account.password.set',
+  'account.email.set',
+  'account.mobile.set',
+  'account.2fa.disable',
+  'account.trustedDevices.remove',
+  'account.trustedDevices.removeAll',
+]);
 
 export interface CommonFlags {
   json?: boolean;
@@ -21,6 +31,7 @@ export interface CommonFlags {
   confirm?: boolean;
   yes?: boolean;
   file?: string;
+  iKnow?: boolean;
 }
 
 /**
@@ -32,7 +43,7 @@ export interface CommonFlags {
 export async function gate(
   ctx: Context,
   flags: { confirm?: boolean; yes?: boolean },
-  preview: { action: string; request?: unknown },
+  preview: { action: string; request?: unknown; endpointId?: string; iKnow?: boolean },
 ): Promise<boolean> {
   if (!flags.confirm) {
     ctx.logger.result(
@@ -43,6 +54,9 @@ export async function gate(
       { dryRun: true, action: preview.action, request: preview.request },
     );
     return false;
+  }
+  if (preview.endpointId && SECURITY_WRITES.has(preview.endpointId) && !preview.iKnow) {
+    throw new UsageError('--i-know is required with --confirm for account-security changes');
   }
   if (flags.confirm && !flags.yes && !ctx.logger.isJson && process.stdin.isTTY) {
     process.stderr.write(`\nAbout to ${preview.action}\n`);
@@ -93,7 +107,7 @@ export async function mutateEndpoint(
     // in the dry-run preview.
     const safeUrl = redactUrl(preview.url);
     const req = { method: preview.method, url: safeUrl, body: preview.body };
-    if (!(await gate(ctx, flags, { action: `${preview.method} ${safeUrl}`, request: req }))) return;
+    if (!(await gate(ctx, flags, { action: `${preview.method} ${safeUrl}`, request: req, endpointId: id, iKnow: flags.iKnow }))) return;
   }
   const data = await ctx.client.call(id, args);
   emit(ctx, data, flags.unsafeRaw);
@@ -119,12 +133,21 @@ export async function fetchForm(
 }
 
 /** Read a completed-form payload from a file path (or `-` for stdin). */
-function readPayload(file: string): unknown {
-  const raw = file === '-' ? fs.readFileSync(0, 'utf-8') : fs.readFileSync(file, 'utf-8');
+export function readBodyFromFlags(flags: Pick<CommonFlags, 'file'>, required = false): unknown {
+  if (!flags.file) {
+    if (required) throw new UsageError('provide the completed form with --file <json> (or --file - for stdin)');
+    return undefined;
+  }
+  let raw: string;
+  try {
+    raw = flags.file === '-' ? fs.readFileSync(0, 'utf-8') : fs.readFileSync(flags.file, 'utf-8');
+  } catch (error) {
+    throw new UsageError(`could not read --file ${flags.file}: ${(error as Error).message}`);
+  }
   try {
     return JSON.parse(raw);
-  } catch (e) {
-    throw new Error(`--file is not valid JSON: ${(e as Error).message}`);
+  } catch (error) {
+    throw new UsageError(`--file ${flags.file} is not valid JSON: ${(error as Error).message}`);
   }
 }
 
@@ -190,8 +213,7 @@ export async function submitForm(
   flags: CommonFlags,
 ): Promise<void> {
   await ctx.ensureCredentials();
-  if (!flags.file) throw new Error('provide the completed form with --file <json> (or --file - for stdin)');
-  const payload = readPayload(flags.file);
+  const payload = readBodyFromFlags(flags, true);
 
   const cached = loadFormCache(ctx.accountHash(), flow);
   if (!cached) {

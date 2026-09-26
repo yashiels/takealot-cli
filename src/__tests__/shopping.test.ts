@@ -166,7 +166,7 @@ describe('mutation gating — behavioral, every mutating endpoint', () => {
       // --confirm: exactly the write fetch
       fetchMock.mockClear();
       const o2 = captureStdout();
-      await mutateEndpoint(ctx, row.id, args, { confirm: true, yes: true });
+      await mutateEndpoint(ctx, row.id, args, { confirm: true, yes: true, iKnow: true });
       o2.restore();
       expect(fetchMock.mock.calls.length, `${row.id} must write once with --confirm`).toBe(1);
     }

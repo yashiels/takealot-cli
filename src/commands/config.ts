@@ -26,7 +26,6 @@ export async function configShow(ctx: Context): Promise<void> {
     mobileApiBase: config.mobileApiBase ?? DEFAULTS.mobileApiBase,
     platform: config.platform ?? DEFAULTS.platform,
     preferredBrands: config.preferredBrands ?? [],
-    defaultCardReference: config.defaultCardReference ?? null,
   };
 
   const credentials = creds
@@ -72,9 +71,7 @@ export async function configShow(ctx: Context): Promise<void> {
       process.stdout.write(
         `  ${c.dim('preferred')}      ${settings.preferredBrands.length ? settings.preferredBrands.join(', ') : c.gray('(none)')}\n`,
       );
-      process.stdout.write(
-        `  ${c.dim('default card')}   ${settings.defaultCardReference ?? c.gray('(none)')}\n\n`,
-      );
+      process.stdout.write('\n');
 
       process.stdout.write(`${c.bold('Credentials')}\n`);
       if (!credentials) {

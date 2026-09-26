@@ -101,26 +101,8 @@ export interface Config {
   platform?: string;
   /** Brands to prefer when no exact order-history match exists. */
   preferredBrands?: string[];
-  /** Saved-card reference (UUID) to use by default at checkout. */
-  defaultCardReference?: string;
   /** Override any field of the mocked Android device profile. */
   deviceProfile?: Partial<DeviceProfile>;
-}
-
-/**
- * A persisted checkout-in-progress, so an ambiguous/interrupted `checkout
- * --confirm` can be reconciled instead of blindly re-charging. 0600, per-account.
- */
-export interface PendingOrder {
-  emailHash: string;
-  /** Client-generated correlation id, written before the create POST. */
-  correlationId: string;
-  /** Hash of the cart at creation, to correlate a lost create response. */
-  cartHash: string;
-  stage: 'creating' | 'created' | 'paying';
-  orderId?: string;
-  talInitiationId?: string;
-  createdAt: number;
 }
 
 // =====================
@@ -218,31 +200,16 @@ export interface SavedCard {
 // Checkout
 // =====================
 
-/** Delivery detail surfaced from the checkout state for the dry-run preview. */
-export interface DeliveryInfo {
-  address?: string;
-  options?: string[];
-  eta?: string;
-  fee?: number;
-}
-
-export interface CheckoutPlan {
-  cart: CartResult;
-  cards: SavedCard[];
-  selectedCard?: SavedCard;
-  /** Total to be charged in Rand, if known. */
-  amountDue?: number;
-  delivery?: DeliveryInfo;
-}
-
-export interface CheckoutResult {
-  success: boolean;
-  /** Machine-readable outcome an agent branches on. */
-  status?: 'placed' | 'action_required' | 'already_paid' | 'ambiguous' | 'failed';
-  orderId?: string;
-  talInitiationId?: string;
-  /** 3DS challenge URL (preserved by the redactor) when status is action_required. */
-  challengeUrl?: string;
-  amountPaid?: number;
-  message?: string;
+export interface CheckoutPreview {
+  items: Array<{ title: string; quantity: number; price: number | null }>;
+  subtotal: number | null;
+  discount: number | null;
+  shippingDiscount: number | null;
+  credits: number | null;
+  total: number | null;
+  amountDue: number | null;
+  shippingMethod: string;
+  currency: string;
+  sectionsIncomplete: string[];
+  payInApp: true;
 }
