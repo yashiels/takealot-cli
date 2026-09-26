@@ -58,9 +58,16 @@ export async function cartAdd(
   // Exact-id add — no search, no preference pick.
   if (opts.sku !== undefined || opts.plid !== undefined) {
     const qty = opts.qty ?? 1;
-    const target = opts.sku !== undefined ? `SKU ${opts.sku}` : `PLID ${opts.plid}`;
-    if (!(await gate(ctx, opts, { action: `add ${qty}× ${target} to the cart` }))) return;
-    const skuId = opts.sku ?? (await ctx.client.skuForPlid(opts.plid!));
+    let title: string | null = null;
+    const skuId =
+      opts.sku ??
+      (await ctx.client.skuForPlid(opts.plid!, (product) => {
+        title = product.title;
+      }));
+    const body = { products: [{ id: skuId, quantity: qty }] };
+    const request = ctx.client.describeCall('cart.add', { body });
+    const target = `SKU ${skuId}${title ? ` (${title})` : ''}`;
+    if (!(await gate(ctx, opts, { action: `add ${qty}× ${target} to the cart`, request }))) return;
     ctx.logger.info(`➕ Adding SKU ${skuId} (qty ${qty})…`);
     const res = await ctx.client.addSkuToCart(skuId, qty);
     ctx.logger.result(

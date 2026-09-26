@@ -111,8 +111,8 @@ export const CATALOGUE: EndpointRow[] = [
   r({ id: 'product.report.form', domain: 'product', method: 'GET', path: 'customers/{customerId}/report-product/{skuId}', auth: true, encoding: 'none', mutating: false, command: 'info report-form', sample: { params: { ...CID, skuId: 999 } } }),
 
   // ── 5. Recommendations & Sponsored Ads ─────────────────────────────────
-  r({ id: 'reco.location', domain: 'recommend', method: 'GET', path: 'recommendations/{location}', auth: false, encoding: 'none', mutating: false, command: 'recommend', sample: { params: { location: 'home' } } }),
-  r({ id: 'reco.location.layout', domain: 'recommend', method: 'GET', path: 'recommendations/{location}/layout', auth: false, encoding: 'none', mutating: false, command: 'recommend --layout', sample: { params: { location: 'home' } } }),
+  r({ id: 'reco.location', domain: 'recommend', method: 'GET', path: 'recommendations/{location}', auth: false, encoding: 'none', mutating: false, command: 'recommend', sample: { params: { location: 'home-page' }, query: { platform: 'android', model: 'trending', limit: 10, display_type: 'product' } } }),
+  r({ id: 'reco.location.layout', domain: 'recommend', method: 'GET', path: 'recommendations/{location}/layout', auth: false, encoding: 'none', mutating: false, command: 'recommend layout', sample: { params: { location: 'home-page' }, query: { platform: 'android', number_of_slots: 5, has_customer_id: false } } }),
   r({ id: 'reco.customer', domain: 'recommend', method: 'GET', path: 'customer/{customerId}/recommendations', auth: true, encoding: 'none', mutating: false, command: 'recommend --personal', sample: { params: CID } }),
   r({ id: 'reco.trending', domain: 'recommend', method: 'GET', path: 'recommend/trending', auth: false, encoding: 'none', mutating: false, command: 'recommend --trending', sample: {} }),
   r({ id: 'ads.sponsoredProducts', domain: 'recommend', method: 'GET', path: 'sponsored-products', auth: false, encoding: 'none', mutating: false, command: null, excluded: true, reason: 'sponsored ad slot — not a shopper action' }),
@@ -159,13 +159,13 @@ export const CATALOGUE: EndpointRow[] = [
   r({ id: 'orders.returns', domain: 'orders', method: 'GET', path: 'order/{orderId}/returns', auth: true, encoding: 'none', mutating: false, command: 'orders returns', sample: { params: { orderId: 'O1' } } }),
 
   // ── 10. Invoices & Credit Notes ────────────────────────────────────────
-  r({ id: 'invoices.list', domain: 'invoices', method: 'GET', path: 'order/{orderId}/invoices', auth: true, encoding: 'none', mutating: false, command: 'invoices', sample: { params: { orderId: 'O1' } } }),
-  r({ id: 'invoices.request.form', domain: 'invoices', method: 'GET', path: 'order/{orderId}/invoice/{invoiceId}/request', auth: true, encoding: 'none', mutating: false, command: 'invoices request form', sample: { params: { orderId: 'O1', invoiceId: 'I1' } } }),
-  r({ id: 'invoices.request', domain: 'invoices', method: 'POST', path: 'order/{orderId}/invoice/{invoiceId}/request', auth: true, encoding: 'json', mutating: true, command: 'invoices request submit', sample: { params: { orderId: 'O1', invoiceId: 'I1' }, body: {} } }),
-  r({ id: 'invoices.pdf', domain: 'invoices', method: 'GET', path: 'order/{orderId}/invoice/{invoiceId}/pdf/url', auth: true, encoding: 'none', mutating: false, command: 'invoices pdf', sample: { params: { orderId: 'O1', invoiceId: 'I1' } } }),
-  r({ id: 'invoices.creditnote.pdf', domain: 'invoices', method: 'GET', path: 'order/{orderId}/creditnote/{creditnoteId}/pdf/url', auth: true, encoding: 'none', mutating: false, command: 'invoices creditnote-pdf', sample: { params: { orderId: 'O1', creditnoteId: 'C1' } } }),
-  r({ id: 'invoices.business.get', domain: 'invoices', method: 'GET', path: 'order/{orderId}/invoice/business-details', auth: true, encoding: 'none', mutating: false, command: 'invoices business form', sample: { params: { orderId: 'O1' } } }),
-  r({ id: 'invoices.business.set', domain: 'invoices', method: 'PUT', path: 'order/{orderId}/invoice/business-details', auth: true, encoding: 'json', mutating: true, command: 'invoices business submit', sample: { params: { orderId: 'O1' }, body: {} } }),
+  r({ id: 'invoices.list', domain: 'invoices', method: 'GET', path: 'order/{obfuscatedOrderId}/invoices', auth: true, encoding: 'none', mutating: false, command: 'invoices', sample: { params: { obfuscatedOrderId: 'O1' } } }),
+  r({ id: 'invoices.request.form', domain: 'invoices', method: 'GET', path: 'order/{obfuscatedOrderId}/invoice/{invoiceId}/request', auth: true, encoding: 'none', mutating: false, command: 'invoices request form', sample: { params: { obfuscatedOrderId: 'O1', invoiceId: 'I1' } } }),
+  r({ id: 'invoices.request', domain: 'invoices', method: 'POST', path: 'order/{obfuscatedOrderId}/invoice/{invoiceId}/request', auth: true, encoding: 'json', mutating: true, command: 'invoices request submit', sample: { params: { obfuscatedOrderId: 'O1', invoiceId: 'I1' }, body: {} } }),
+  r({ id: 'invoices.pdf', domain: 'invoices', method: 'GET', path: 'order/{obfuscatedOrderId}/invoice/{invoiceId}/pdf/url', auth: true, encoding: 'none', mutating: false, command: 'invoices pdf', sample: { params: { obfuscatedOrderId: 'O1', invoiceId: 'I1' } } }),
+  r({ id: 'invoices.creditnote.pdf', domain: 'invoices', method: 'GET', path: 'order/{obfuscatedOrderId}/creditnote/{creditnoteId}/pdf/url', auth: true, encoding: 'none', mutating: false, command: 'invoices creditnote-pdf', sample: { params: { obfuscatedOrderId: 'O1', creditnoteId: 'C1' } } }),
+  r({ id: 'invoices.business.get', domain: 'invoices', method: 'GET', path: 'order/{obfuscatedOrderId}/invoice/business-details', auth: true, encoding: 'none', mutating: false, command: 'invoices business form', sample: { params: { obfuscatedOrderId: 'O1' } } }),
+  r({ id: 'invoices.business.set', domain: 'invoices', method: 'PUT', path: 'order/{obfuscatedOrderId}/invoice/business-details', auth: true, encoding: 'json', mutating: true, command: 'invoices business submit', sample: { params: { obfuscatedOrderId: 'O1' }, body: {} } }),
   r({ id: 'invoices.delivered', domain: 'invoices', method: 'GET', path: 'customer/{customerId}/orders/delivered', auth: true, encoding: 'none', mutating: false, command: 'invoices delivered', sample: { params: CID } }),
 
   // ── 11. Returns & Refunds ──────────────────────────────────────────────
@@ -279,7 +279,7 @@ export const CATALOGUE: EndpointRow[] = [
   r({ id: 'account.deviceActivity', domain: 'account', method: 'GET', path: 'customers/account/security/device-login-activity', auth: true, encoding: 'none', mutating: false, command: 'account activity', sample: {} }),
 
   // ── 17. Reviews ────────────────────────────────────────────────────────
-  r({ id: 'reviews.public', domain: 'reviews', method: 'GET', path: 'product-reviews/plid/PLID{plid}', auth: false, encoding: 'none', mutating: false, command: 'reviews', sample: { params: { plid: 52341565 } } }),
+  r({ id: 'reviews.public', domain: 'reviews', method: 'GET', path: 'product-reviews/plid/{plid}', auth: false, encoding: 'none', mutating: false, command: 'reviews', sample: { params: { plid: 52341565 }, query: { page: 1 } } }),
   r({ id: 'myreviews.list', domain: 'reviews', method: 'GET', path: 'customers/{customerId}/reviews', auth: true, encoding: 'none', mutating: false, command: 'myreviews list', sample: { params: CID } }),
   r({ id: 'myreviews.get', domain: 'reviews', method: 'GET', path: 'customers/{customerId}/reviews/{tsinId}', auth: true, encoding: 'none', mutating: false, command: 'myreviews show', sample: { params: { ...CID, tsinId: 'T1' } } }),
   r({ id: 'myreviews.create', domain: 'reviews', method: 'POST', path: 'customers/{customerId}/reviews/{tsinId}', auth: true, encoding: 'json', mutating: true, command: 'myreviews add submit', sample: { params: { ...CID, tsinId: 'T1' }, body: {} } }),

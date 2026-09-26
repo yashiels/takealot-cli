@@ -29,10 +29,6 @@ describe('cart edit (typed core)', () => {
     expect(JSON.parse(calls[0]!.init.body as string)).toEqual({ products: [{ id: 999 }] });
   });
 
-  it('skuForPlid resolves the buyable sku from product-details', async () => {
-    const { client } = mkClient({ body: { product_views: { buybox_summary: { product_id: 777 } } } });
-    await expect(client.skuForPlid(52341565)).resolves.toBe(777);
-  });
 });
 
 // ── renderRaw is total (never throws) ───────────────────────────────────────

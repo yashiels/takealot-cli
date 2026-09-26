@@ -1,0 +1,385 @@
+{
+ "display_type": "product",
+ "products": [
+  {
+   "core": {
+    "id": 98632941,
+    "title": "Hisense 20L 700W Digital Microwave Oven with 6 Preset Menus - Mirror Silver",
+    "slug": "hisense-20l-700w-digital-microwave-oven-with-6-preset-menus-mirr",
+    "subtitle": "H20moms15",
+    "brand": "Hisense",
+    "brand_url": {
+     "link_data": {
+      "path": "/all?filter=Brand:{brand_slug}",
+      "fields": {
+       "brand_slug": "Hisense"
+      }
+     }
+    },
+    "star_rating": 4.7,
+    "reviews": 904,
+    "formats": [],
+    "authors": []
+   },
+   "gallery": {
+    "images": [
+     "https://media.takealot.com/covers_images/c89b00a67fa34451a305ba5f7e379039/s-{size}.file"
+    ],
+    "count": 16,
+    "display_count": "10+",
+    "size_guide": null
+   },
+   "badges": {
+    "entries": [],
+    "app_entries": [],
+    "promotion_id": null
+   },
+   "buybox_summary": {
+    "listing_price": null,
+    "pretty_price": "R 949",
+    "app_pretty_price": "R 949",
+    "prices": [
+     949
+    ],
+    "app_prices": [
+     949
+    ],
+    "saving": null,
+    "app_saving": null,
+    "is_add_to_cart_available": true,
+    "is_shop_all_options_available": false,
+    "is_add_to_wish_list_available": true,
+    "product_id": 223505694,
+    "delivery_charges": {},
+    "tsin": 100032037,
+    "is_preorder": false,
+    "add_to_cart_text": "Add to Cart",
+    "promotion_qty": null,
+    "promotion_qty_display_text": null,
+    "shipping_message": {
+     "description": "{0} {1}",
+     "values": [
+      {
+       "value_id": "0",
+       "type": "bold",
+       "value": "FREE DELIVERY WITH"
+      },
+      {
+       "value_id": "1",
+       "type": "link",
+       "value": "TAKEALOTMORE",
+       "url": "https://www.takealot.com/takealotmore"
+      }
+     ],
+     "code": "takealotmore"
+    }
+   },
+   "promotions_summary": {
+    "is_displayed": false,
+    "label": null,
+    "takealot_more_summary": {
+     "label": "Save with",
+     "is_displayed": {
+      "app": false,
+      "web": false
+     },
+     "image": {
+      "source": "https://static.takealot.com/images/takealotmore/TakealotMORE.png",
+      "alt_text": "TakealotMORE"
+     }
+    }
+   },
+   "stock_availability_summary": {
+    "status": "In stock",
+    "is_leadtime": false,
+    "is_in_stock": true,
+    "is_imported": false,
+    "distribution_centres": [
+     {
+      "id": "distribution-centre-0",
+      "text": "JHB",
+      "info_mode": "short",
+      "description": "This item can be shipped from Johannesburg."
+     }
+    ]
+   },
+   "variant_summary": {
+    "has_more_colours": false,
+    "applied_selectors": []
+   },
+   "review_summary": {
+    "star_rating": 4.7,
+    "review_count": 904,
+    "distribution": {
+     "num_1_star_ratings": 24,
+     "num_2_star_ratings": 8,
+     "num_3_star_ratings": 23,
+     "num_4_star_ratings": 108,
+     "num_5_star_ratings": 741
+    }
+   },
+   "dynamic_pills": [],
+   "selectors": {}
+  },
+  {
+   "core": {
+    "id": 101868041,
+    "title": "Men's Perfume Gift Set - 4 Piece Fragrance Collection",
+    "slug": "men-s-perfume-gift-set-4-piece-fragrance-collection",
+    "subtitle": "Perfume Gift Set",
+    "brand": null,
+    "brand_url": null,
+    "star_rating": 3.7,
+    "reviews": 3,
+    "formats": [],
+    "authors": []
+   },
+   "gallery": {
+    "images": [
+     "https://media.takealot.com/covers_images/1c201b8f716341729cf13f9fd384a170/s-{size}.file"
+    ],
+    "count": 3,
+    "display_count": "3",
+    "size_guide": null
+   },
+   "badges": {
+    "entries": [],
+    "app_entries": [],
+    "promotion_id": null
+   },
+   "buybox_summary": {
+    "listing_price": null,
+    "pretty_price": "R 199",
+    "app_pretty_price": "R 199",
+    "prices": [
+     199
+    ],
+    "app_prices": [
+     199
+    ],
+    "saving": null,
+    "app_saving": null,
+    "is_add_to_cart_available": true,
+    "is_shop_all_options_available": false,
+    "is_add_to_wish_list_available": true,
+    "product_id": 233956769,
+    "delivery_charges": {},
+    "tsin": 103717018,
+    "is_preorder": false,
+    "add_to_cart_text": "Add to Cart",
+    "promotion_qty": null,
+    "promotion_qty_display_text": null,
+    "shipping_message": {
+     "description": "{0} {1}",
+     "values": [
+      {
+       "value_id": "0",
+       "type": "bold",
+       "value": "FREE DELIVERY WITH"
+      },
+      {
+       "value_id": "1",
+       "type": "link",
+       "value": "TAKEALOTMORE",
+       "url": "https://www.takealot.com/takealotmore"
+      }
+     ],
+     "code": "takealotmore"
+    }
+   },
+   "promotions_summary": {
+    "is_displayed": false,
+    "label": null,
+    "takealot_more_summary": {
+     "label": "Save with",
+     "is_displayed": {
+      "app": false,
+      "web": false
+     },
+     "image": {
+      "source": "https://static.takealot.com/images/takealotmore/TakealotMORE.png",
+      "alt_text": "TakealotMORE"
+     }
+    }
+   },
+   "stock_availability_summary": {
+    "status": "Ships in 5 - 7 work days",
+    "is_leadtime": true,
+    "is_in_stock": false,
+    "is_imported": false,
+    "distribution_centres": []
+   },
+   "variant_summary": {
+    "has_more_colours": false,
+    "applied_selectors": []
+   },
+   "review_summary": {
+    "star_rating": 3.7,
+    "review_count": 3,
+    "distribution": {
+     "num_1_star_ratings": 0,
+     "num_2_star_ratings": 1,
+     "num_3_star_ratings": 0,
+     "num_4_star_ratings": 1,
+     "num_5_star_ratings": 1
+    }
+   },
+   "dynamic_pills": [],
+   "selectors": {}
+  },
+  {
+   "core": {
+    "id": 102221059,
+    "title": "Samsung 65\" M70H MiniLED AI Smart TV with 4K Upscaling & MotionX",
+    "slug": "samsung-65-m70h-miniled-ai-smart-tv-with-4k-upscaling-motionx",
+    "subtitle": "65m70h",
+    "brand": "Samsung",
+    "brand_url": {
+     "link_data": {
+      "path": "/all?filter=Brand:{brand_slug}",
+      "fields": {
+       "brand_slug": "Samsung"
+      }
+     }
+    },
+    "star_rating": 4.6,
+    "reviews": 11,
+    "formats": [],
+    "authors": []
+   },
+   "gallery": {
+    "images": [
+     "https://media.takealot.com/covers_images/16cbb14173534b4b944ad69daae4d2e9/s-{size}.file"
+    ],
+    "count": 20,
+    "display_count": "10+",
+    "size_guide": null
+   },
+   "badges": {
+    "entries": [
+     {
+      "id": "badge-0",
+      "type": "top_pick",
+      "value": "Top Pick"
+     },
+     {
+      "id": "badge-1",
+      "type": "saving",
+      "value": "16% off"
+     }
+    ],
+    "app_entries": [
+     {
+      "id": "badge-0",
+      "type": "top_pick",
+      "value": "Top Pick"
+     },
+     {
+      "id": "badge-1",
+      "type": "saving",
+      "value": "16% off"
+     }
+    ],
+    "promotion_id": 124747
+   },
+   "buybox_summary": {
+    "listing_price": 11999,
+    "pretty_price": "R 9,999",
+    "app_pretty_price": "R 9,999",
+    "prices": [
+     9999
+    ],
+    "app_prices": [
+     9999
+    ],
+    "saving": "16%",
+    "app_saving": "16%",
+    "is_add_to_cart_available": true,
+    "is_shop_all_options_available": false,
+    "is_add_to_wish_list_available": true,
+    "product_id": 235601321,
+    "delivery_charges": {},
+    "tsin": 104119484,
+    "is_preorder": false,
+    "add_to_cart_text": "Add to Cart",
+    "promotion_qty": null,
+    "promotion_qty_display_text": null,
+    "shipping_message": {
+     "description": "{0} {1}",
+     "values": [
+      {
+       "value_id": "0",
+       "type": "bold",
+       "value": "FREE DELIVERY WITH"
+      },
+      {
+       "value_id": "1",
+       "type": "link",
+       "value": "TAKEALOTMORE",
+       "url": "https://www.takealot.com/takealotmore"
+      }
+     ],
+     "code": "takealotmore"
+    }
+   },
+   "promotions_summary": {
+    "is_displayed": false,
+    "label": null,
+    "takealot_more_summary": {
+     "label": "Save with",
+     "is_displayed": {
+      "app": false,
+      "web": false
+     },
+     "image": {
+      "source": "https://static.takealot.com/images/takealotmore/TakealotMORE.png",
+      "alt_text": "TakealotMORE"
+     }
+    }
+   },
+   "stock_availability_summary": {
+    "status": "In stock",
+    "is_leadtime": false,
+    "is_in_stock": true,
+    "is_imported": false,
+    "distribution_centres": [
+     {
+      "id": "distribution-centre-0",
+      "text": "CPT",
+      "info_mode": "short",
+      "description": "This item can be shipped from Cape Town."
+     },
+     {
+      "id": "distribution-centre-1",
+      "text": "DBN",
+      "info_mode": "short",
+      "description": "This item can be shipped from Durban."
+     },
+     {
+      "id": "distribution-centre-2",
+      "text": "JHB",
+      "info_mode": "short",
+      "description": "This item can be shipped from Johannesburg."
+     }
+    ]
+   },
+   "variant_summary": {
+    "has_more_colours": false,
+    "applied_selectors": []
+   },
+   "review_summary": {
+    "star_rating": 4.6,
+    "review_count": 11,
+    "distribution": {
+     "num_1_star_ratings": 1,
+     "num_2_star_ratings": 0,
+     "num_3_star_ratings": 0,
+     "num_4_star_ratings": 0,
+     "num_5_star_ratings": 10
+    }
+   },
+   "dynamic_pills": [],
+   "selectors": {}
+  }
+ ]
+}

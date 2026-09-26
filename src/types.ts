@@ -132,6 +132,27 @@ export interface SearchResult {
   total: number;
 }
 
+export interface ProductVariant {
+  title: string;
+  value: string;
+  plid: number | null;
+  href: string | null;
+}
+
+export interface ProductDetails {
+  plid: number;
+  skuId: number | null;
+  title: string | null;
+  brand: string | null;
+  price: number | null;
+  prettyPrice: string | null;
+  inStock: boolean;
+  addToCart: boolean;
+  rating: number | null;
+  reviewCount: number;
+  variants: ProductVariant[];
+}
+
 export interface CartItem {
   /** PLID — for links/display. */
   productId: number;

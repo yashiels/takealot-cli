@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 // Resolve compiled CLI entrypoint relative to this test file (ESM-safe)
@@ -36,6 +36,22 @@ describe('takealot-cli smoke tests', () => {
     expect(checkout).not.toMatch(/^\s*(order|payhost|resume)\b/m);
     expect(plus).not.toMatch(/^\s*(pay|signup|reactivate|card-add|card-payment)\b/m);
     expect(plusManage).not.toMatch(/^\s*(upgrade|downgrade|card)\b/m);
+  });
+
+  it('rejects an unknown subcommand under a readable group', () => {
+    const result = spawnSync('node', [cli, 'plus', 'bogus'], { encoding: 'utf8' });
+    expect(result.status).toBe(4);
+    expect(result.stderr).toContain('too many arguments');
+  });
+
+  it('rejects excess recommendation arguments before making a request', () => {
+    const result = spawnSync(
+      'node',
+      [cli, 'recommend', 'home-page', 'junk', '--model', 'rfy'],
+      { encoding: 'utf8' },
+    );
+    expect(result.status).toBe(4);
+    expect(result.stderr).toContain('too many arguments');
   });
 
   it.skipIf(isCI)('should search without auth (live API)', () => {

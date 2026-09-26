@@ -7,7 +7,13 @@ import { SECURITY_WRITES, fetchForm, mutateEndpoint, readBodyFromFlags, readEndp
 /** First command words handled by bespoke modules — skipped by the auto-wirer. */
 const BESPOKE_FIRST = new Set(['search', 'info', 'cart', 'checkout', 'cards', 'login']);
 /** Specific endpoint ids handled bespoke (typed) — the auto-wirer leaves them alone. */
-const BESPOKE_IDS = new Set(['orders.list', 'orders.detail']);
+const BESPOKE_IDS = new Set([
+  'orders.list',
+  'orders.detail',
+  'reviews.public',
+  'reco.location',
+  'reco.location.layout',
+]);
 
 interface RunFn {
   (command: Command, fn: (ctx: Context) => Promise<void>): void;
@@ -135,8 +141,11 @@ function wireGroup(
   const anyMutating = [row, ...g.variants.map((v) => v.row)].some((rr) => rr.mutating && !GATE_EXEMPT_MUTATIONS.has(rr.id));
   const anySecurity = [row, ...g.variants.map((v) => v.row)].some((rr) => SECURITY_WRITES.has(rr.id));
 
-  let cmd = withGlobals(parent.command(leafName)).description(describe(row));
-  for (const p of params) cmd = cmd.argument(`<${p}>`, `${p} path parameter`);
+  let cmd = withGlobals(parent.command(leafName)).description(describe(row)).allowExcessArguments(false);
+  for (const p of params) {
+    const displayParam = p === 'obfuscatedOrderId' ? 'orderId' : p;
+    cmd = cmd.argument(`<${displayParam}>`, `${displayParam} path parameter`);
+  }
   cmd = cmd.option('--unsafe-raw', 'print unredacted JSON (leaks secrets)');
   if (!isForm) cmd = cmd.option('--query <k=v...>', 'query parameter (repeatable)', kv);
   if (isSubmit || (anyMutating && !isForm)) {
@@ -159,6 +168,9 @@ function wireGroup(
 
       const paramObj: Record<string, string | number> = {};
       params.forEach((p, i) => (paramObj[p] = positionals[i]!));
+      if (chosen.domain === 'invoices' && paramObj.obfuscatedOrderId !== undefined) {
+        paramObj.obfuscatedOrderId = await ctx.client.resolveObfuscatedOrderId(String(paramObj.obfuscatedOrderId));
+      }
       const query = (options.query as Record<string, string>) ?? undefined;
       const flags: CommonFlags = {
         unsafeRaw: Boolean(options.unsafeRaw),
