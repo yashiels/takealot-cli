@@ -1,0 +1,34 @@
+{
+ "layout_items": [
+  {
+   "model_key": "rfy",
+   "display_title": "Recommended For You",
+   "display_type": "product",
+   "is_personalised": true
+  },
+  {
+   "model_key": "customer_consumables",
+   "display_title": "Get Your Essentials Today!",
+   "display_type": "product",
+   "is_personalised": true
+  },
+  {
+   "model_key": "trending_by_department_29",
+   "display_title": "Trending In Beauty",
+   "display_type": "product",
+   "is_personalised": false
+  },
+  {
+   "model_key": "trending_by_department_10",
+   "display_title": "Trending in Baby & Toddler",
+   "display_type": "product",
+   "is_personalised": false
+  },
+  {
+   "model_key": "trending_by_department_23",
+   "display_title": "Trending in DIY, Garden, Pool, & Patio",
+   "display_type": "product",
+   "is_personalised": false
+  }
+ ]
+}

@@ -1,0 +1,218 @@
+{
+ "reviews": [
+  {
+   "tsin_id": 77419320,
+   "customer_id": 0,
+   "signature": "REDACTED",
+   "rating": 5,
+   "uuid": "c8f6ff4c-ed75-4b9b-b89f-402c68ed9cd6",
+   "text": {
+    "body": "On this one I have to say that this is one of the best cables I ever had. Its fast charging and good quality and to promise myself I would never buy any other again.",
+    "title": "TROO Certified Fast Charge 30W USB To Type-C Braided Cable - Black - 2.0 m"
+   },
+   "num_upvotes": 8,
+   "customer_name": "Danie",
+   "date": "30 Nov 2022",
+   "time_after_purchase": "Reviewed 6 days after purchase",
+   "variant_info": [
+    "Size: 2.0 m",
+    "Colour: Black"
+   ]
+  },
+  {
+   "tsin_id": 77419320,
+   "customer_id": 0,
+   "signature": "REDACTED",
+   "rating": 5,
+   "uuid": "8c482ecd-1b0a-4bde-a1bf-fdfa8ccf718b",
+   "text": {
+    "body": "Perfect cable, long and very well made.",
+    "title": "Perfect cable"
+   },
+   "num_upvotes": 7,
+   "customer_name": "luke",
+   "date": "02 Dec 2022",
+   "time_after_purchase": "Reviewed 7 days after purchase",
+   "variant_info": [
+    "Size: 2.0 m",
+    "Colour: Black"
+   ]
+  },
+  {
+   "tsin_id": 90292751,
+   "customer_id": 0,
+   "signature": "REDACTED",
+   "rating": 5,
+   "uuid": "4917f556-cbdc-4940-860f-780f0b43fded",
+   "text": {
+    "body": "Works perfect, would probably go for a 3m option next time."
+   },
+   "num_upvotes": 7,
+   "customer_name": "Steven ",
+   "date": "02 Dec 2022",
+   "time_after_purchase": "Reviewed 4 days after purchase",
+   "variant_info": [
+    "Size: 2.0 m",
+    "Colour: Atomic Titanium"
+   ]
+  }
+ ],
+ "page_info": {
+  "total": 2161,
+  "total_pages": 217,
+  "current_page": 1,
+  "page_size": 10
+ },
+ "sort_options": [
+  {
+   "value": "SO_MOST_HELPFUL",
+   "display_value": "Most Helpful",
+   "is_selected": true
+  },
+  {
+   "value": "SO_LATEST",
+   "display_value": "Most Recent",
+   "is_selected": false
+  }
+ ],
+ "filters": [
+  {
+   "filter_name": "rating",
+   "display_name": "Ratings",
+   "entries": [
+    {
+     "value": "5",
+     "display_value": "5 {star}",
+     "is_checked": false
+    },
+    {
+     "value": "4",
+     "display_value": "4 {star}",
+     "is_checked": false
+    },
+    {
+     "value": "3",
+     "display_value": "3 {star}",
+     "is_checked": false
+    },
+    {
+     "value": "2",
+     "display_value": "2 {star}",
+     "is_checked": false
+    },
+    {
+     "value": "1",
+     "display_value": "1 {star}",
+     "is_checked": false
+    }
+   ]
+  },
+  {
+   "filter_name": "colour_variant",
+   "display_name": "Colour",
+   "entries": [
+    {
+     "value": "Apple Red",
+     "display_value": "Apple Red",
+     "is_checked": false
+    },
+    {
+     "value": "Army Camo",
+     "display_value": "Army Camo",
+     "is_checked": false
+    },
+    {
+     "value": "Atomic Titanium",
+     "display_value": "Atomic Titanium",
+     "is_checked": false
+    },
+    {
+     "value": "Baby Pink",
+     "display_value": "Baby Pink",
+     "is_checked": false
+    },
+    {
+     "value": "Black",
+     "display_value": "Black",
+     "is_checked": false
+    },
+    {
+     "value": "Black & Purple",
+     "display_value": "Black & Purple",
+     "is_checked": false
+    },
+    {
+     "value": "Black & White",
+     "display_value": "Black & White",
+     "is_checked": false
+    },
+    {
+     "value": "Lumo Blue & Purple",
+     "display_value": "Lumo Blue & Purple",
+     "is_checked": false
+    },
+    {
+     "value": "Lumo Pink",
+     "display_value": "Lumo Pink",
+     "is_checked": false
+    },
+    {
+     "value": "Navy Blue",
+     "display_value": "Navy Blue",
+     "is_checked": false
+    },
+    {
+     "value": "Purple",
+     "display_value": "Purple",
+     "is_checked": false
+    },
+    {
+     "value": "Purple & Black",
+     "display_value": "Purple & Black",
+     "is_checked": false
+    },
+    {
+     "value": "Purple Extreme",
+     "display_value": "Purple Extreme",
+     "is_checked": false
+    },
+    {
+     "value": "Red & Navy",
+     "display_value": "Red & Navy",
+     "is_checked": false
+    },
+    {
+     "value": "Titanium & Purple",
+     "display_value": "Titanium & Purple",
+     "is_checked": false
+    }
+   ]
+  },
+  {
+   "filter_name": "size",
+   "display_name": "Size",
+   "entries": [
+    {
+     "value": "0.5 m",
+     "display_value": "0.5 m",
+     "is_checked": false
+    },
+    {
+     "value": "1.0 m",
+     "display_value": "1.0 m",
+     "is_checked": false
+    },
+    {
+     "value": "2.0 m",
+     "display_value": "2.0 m",
+     "is_checked": false
+    },
+    {
+     "value": "3.0 m",
+     "display_value": "3.0 m",
+     "is_checked": false
+    }
+   ]
+  }
+ ]
+}

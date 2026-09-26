@@ -465,7 +465,13 @@
     "command": "recommend",
     "sample": {
       "params": {
-        "location": "home"
+        "location": "home-page"
+      },
+      "query": {
+        "platform": "android",
+        "model": "trending",
+        "limit": 10,
+        "display_type": "product"
       }
     }
   },
@@ -479,10 +485,15 @@
     "auth": false,
     "encoding": "none",
     "mutating": false,
-    "command": "recommend --layout",
+    "command": "recommend layout",
     "sample": {
       "params": {
-        "location": "home"
+        "location": "home-page"
+      },
+      "query": {
+        "platform": "android",
+        "number_of_slots": 5,
+        "has_customer_id": false
       }
     }
   },
@@ -1152,14 +1163,14 @@
     "id": "invoices.list",
     "domain": "invoices",
     "method": "GET",
-    "path": "order/{orderId}/invoices",
+    "path": "order/{obfuscatedOrderId}/invoices",
     "auth": true,
     "encoding": "none",
     "mutating": false,
     "command": "invoices",
     "sample": {
       "params": {
-        "orderId": "O1"
+        "obfuscatedOrderId": "O1"
       }
     }
   },
@@ -1169,14 +1180,14 @@
     "id": "invoices.request.form",
     "domain": "invoices",
     "method": "GET",
-    "path": "order/{orderId}/invoice/{invoiceId}/request",
+    "path": "order/{obfuscatedOrderId}/invoice/{invoiceId}/request",
     "auth": true,
     "encoding": "none",
     "mutating": false,
     "command": "invoices request form",
     "sample": {
       "params": {
-        "orderId": "O1",
+        "obfuscatedOrderId": "O1",
         "invoiceId": "I1"
       }
     }
@@ -1187,14 +1198,14 @@
     "id": "invoices.request",
     "domain": "invoices",
     "method": "POST",
-    "path": "order/{orderId}/invoice/{invoiceId}/request",
+    "path": "order/{obfuscatedOrderId}/invoice/{invoiceId}/request",
     "auth": true,
     "encoding": "json",
     "mutating": true,
     "command": "invoices request submit",
     "sample": {
       "params": {
-        "orderId": "O1",
+        "obfuscatedOrderId": "O1",
         "invoiceId": "I1"
       },
       "body": {}
@@ -1206,14 +1217,14 @@
     "id": "invoices.pdf",
     "domain": "invoices",
     "method": "GET",
-    "path": "order/{orderId}/invoice/{invoiceId}/pdf/url",
+    "path": "order/{obfuscatedOrderId}/invoice/{invoiceId}/pdf/url",
     "auth": true,
     "encoding": "none",
     "mutating": false,
     "command": "invoices pdf",
     "sample": {
       "params": {
-        "orderId": "O1",
+        "obfuscatedOrderId": "O1",
         "invoiceId": "I1"
       }
     }
@@ -1224,14 +1235,14 @@
     "id": "invoices.creditnote.pdf",
     "domain": "invoices",
     "method": "GET",
-    "path": "order/{orderId}/creditnote/{creditnoteId}/pdf/url",
+    "path": "order/{obfuscatedOrderId}/creditnote/{creditnoteId}/pdf/url",
     "auth": true,
     "encoding": "none",
     "mutating": false,
     "command": "invoices creditnote-pdf",
     "sample": {
       "params": {
-        "orderId": "O1",
+        "obfuscatedOrderId": "O1",
         "creditnoteId": "C1"
       }
     }
@@ -1242,14 +1253,14 @@
     "id": "invoices.business.get",
     "domain": "invoices",
     "method": "GET",
-    "path": "order/{orderId}/invoice/business-details",
+    "path": "order/{obfuscatedOrderId}/invoice/business-details",
     "auth": true,
     "encoding": "none",
     "mutating": false,
     "command": "invoices business form",
     "sample": {
       "params": {
-        "orderId": "O1"
+        "obfuscatedOrderId": "O1"
       }
     }
   },
@@ -1259,14 +1270,14 @@
     "id": "invoices.business.set",
     "domain": "invoices",
     "method": "PUT",
-    "path": "order/{orderId}/invoice/business-details",
+    "path": "order/{obfuscatedOrderId}/invoice/business-details",
     "auth": true,
     "encoding": "json",
     "mutating": true,
     "command": "invoices business submit",
     "sample": {
       "params": {
-        "orderId": "O1"
+        "obfuscatedOrderId": "O1"
       },
       "body": {}
     }
@@ -2873,7 +2884,7 @@
     "id": "reviews.public",
     "domain": "reviews",
     "method": "GET",
-    "path": "product-reviews/plid/PLID{plid}",
+    "path": "product-reviews/plid/{plid}",
     "auth": false,
     "encoding": "none",
     "mutating": false,
@@ -2881,6 +2892,9 @@
     "sample": {
       "params": {
         "plid": 52341565
+      },
+      "query": {
+        "page": 1
       }
     }
   },

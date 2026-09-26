@@ -1,0 +1,1687 @@
+{
+ "title": "TROO Certified 60W Fast Charge USB Type-C Braided Cable Android Auto Ready",
+ "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552",
+ "core": {
+  "title": "TROO Certified 60W Fast Charge USB Type-C Braided Cable Android Auto Ready",
+  "slug": "troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-",
+  "subtitle": "5 Year Full Warranty | Android Auto Compatible | PD Smart Fast Charge & Sync | 10 000 Bends Reinforced",
+  "brand": "TROO",
+  "brand_url": {
+   "link_data": {
+    "path": "/all?filter=Brand:{brand_slug}",
+    "fields": {
+     "brand_slug": "TROO"
+    },
+    "action": "search"
+   }
+  },
+  "star_rating": 4.7,
+  "reviews": 2161,
+  "formats": [],
+  "authors": [],
+  "links": [
+   {
+    "display_value": "Shop All Cellphone Cables",
+    "link_data": {
+     "action": "search",
+     "context": "navigation",
+     "parameters": {
+      "search": {
+       "filters": {
+        "Type": 16,
+        "Category": 26254
+       }
+      }
+     }
+    }
+   }
+  ],
+  "id": 90255552
+ },
+ "buybox": {
+  "plid": 90255552,
+  "variants_call_to_action": "Select an option",
+  "buybox_items_type": "summary",
+  "is_digital": false,
+  "items": [
+   {
+    "is_selected": true,
+    "is_preorder": false,
+    "is_add_to_cart_available": false,
+    "is_add_to_wishlist_available": false,
+    "is_free_shipping_available": false,
+    "multibuy_display": false,
+    "delivery_charges": {},
+    "offer_detail": {},
+    "price": 99,
+    "pretty_price": "From R 99",
+    "add_to_cart_text": "Add to Cart",
+    "loyalty_prices": [
+     {
+      "id": "loyaltyprices-0",
+      "display_text": "eB990",
+      "prices": [
+       990
+      ],
+      "info_text": null,
+      "description": null,
+      "info_mode": null,
+      "image": {
+       "source": "https://static.takealot.com/images/payment/x@example.com",
+       "title": "Ebucks",
+       "alt_text": "Ebucks logo"
+      }
+     },
+     {
+      "id": "loyaltyprices-1",
+      "display_text": "990",
+      "prices": [
+       990
+      ],
+      "info_text": null,
+      "description": null,
+      "info_mode": null,
+      "image": {
+       "source": "https://static.takealot.com/images/payment/discovery-miles-logo.png",
+       "title": "DiscoveryMiles",
+       "alt_text": "Discovery Miles Logo"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "breadcrumbs": {
+  "items": [
+   {
+    "id": 16,
+    "name": "REDACTED",
+    "slug": "cellular-gps",
+    "type": "department"
+   },
+   {
+    "id": 26251,
+    "name": "REDACTED",
+    "slug": "cellular-accessories-26251",
+    "type": "category"
+   },
+   {
+    "id": 26254,
+    "name": "REDACTED",
+    "slug": "cellphone-cables-26254",
+    "type": "category"
+   }
+  ]
+ },
+ "gallery": {
+  "images": [
+   "https://media.takealot.com/covers_images/1427ad0c372b40638dde728f596ab636/s-{size}.file",
+   "https://media.takealot.com/covers_images/95f3c28615ed4186b6feed565448e0e7/s-{size}.file",
+   "https://media.takealot.com/covers_images/77ff9f39dd1440b185131bc47d8b936e/s-{size}.file",
+   "https://media.takealot.com/covers_images/344f16e3cc0b484e954fe9dd6699f7c5/s-{size}.file",
+   "https://media.takealot.com/covers_images/cc8cb13613db4136bc21f6bb7bdc5070/s-{size}.file",
+   "https://media.takealot.com/covers_images/92a6b0c77c444567947dd8893d20f125/s-{size}.file",
+   "https://media.takealot.com/covers_images/fb6184f7777745f38197ebaf43905384/s-{size}.file",
+   "https://media.takealot.com/covers_images/9fb531e981b14affb0491a19012bc27d/s-{size}.file",
+   "https://media.takealot.com/covers_images/1b4637a8ba5d45ccb51c1bf831195465/s-{size}.file",
+   "https://media.takealot.com/covers_images/5d815f1f9dc94a4db81a7e883087fb08/s-{size}.file",
+   "https://media.takealot.com/covers_images/17cb633bc85c42ac9e8aa810d081e5ef/s-{size}.file",
+   "https://media.takealot.com/covers_images/ab4ff9e3a4ec4ebf9475bff4914b1492/s-{size}.file",
+   "https://media.takealot.com/covers_images/4f6be89e9b33482c95b3ec75777ed5e2/s-{size}.file",
+   "https://media.takealot.com/covers_images/2374057013d9408d91a15e0ed77a47b6/s-{size}.file",
+   "https://media.takealot.com/covers_images/d1835c914d98402087b21b23f304ab30/s-{size}.file",
+   "https://media.takealot.com/covers_images/e0823c27636e46299bac502e24068390/s-{size}.file",
+   "https://media.takealot.com/covers_images/446f8f750b874602b1b2b0711b44c382/s-{size}.file",
+   "https://media.takealot.com/covers_images/70ccb81b3a9c44b4bd743530dd69fdc0/s-{size}.file",
+   "https://media.takealot.com/covers_images/594fc5a7b3154d79bf5fdd50cc6f37c7/s-{size}.file",
+   "https://media.takealot.com/covers_images/9c28b4f04cb74f30ab7a5867cf49af3b/s-{size}.file",
+   "https://media.takealot.com/covers_images/4a9a97229d464bd8b23044ac4c4a15d9/s-{size}.file",
+   "https://media.takealot.com/covers_images/7210c2692767426aae1f3438ccf558c7/s-{size}.file",
+   "https://media.takealot.com/covers_images/c44d358e4246478fa487557bc91dcd38/s-{size}.file",
+   "https://media.takealot.com/covers_images/bc4a3bc89e9c4dae99d4ab5fbf449c50/s-{size}.file",
+   "https://media.takealot.com/covers_images/b4aecc6ddb2a4956b20f342011093872/s-{size}.file",
+   "https://media.takealot.com/covers_images/2f69943804534577b6185819f31d043b/s-{size}.file",
+   "https://media.takealot.com/covers_images/fc29c83367f2417eb9937eff2fffea0d/s-{size}.file",
+   "https://media.takealot.com/covers_images/1a7fb70a401a4cb290c3549b1034c3e7/s-{size}.file",
+   "https://media.takealot.com/covers_images/f70717fdfe614855827bea1846b481ff/s-{size}.file",
+   "https://media.takealot.com/covers_images/1cf9b607c9664e5899442080e964b782/s-{size}.file",
+   "https://media.takealot.com/covers_images/187d36d6c6734745843a66b91a54dfcd/s-{size}.file",
+   "https://media.takealot.com/covers_images/2f751124a11941928897bbc2031d5a2b/s-{size}.file",
+   "https://media.takealot.com/covers_images/c574ad566438496abb43092a07471fa3/s-{size}.file",
+   "https://media.takealot.com/covers_images/95ad1f7ddda242469a63ef70487309ba/s-{size}.file",
+   "https://media.takealot.com/covers_images/d8a6ada48e9045429e3156bc73166663/s-{size}.file",
+   "https://media.takealot.com/covers_images/4185ee7679754a2f84e8627c7ad3cee3/s-{size}.file",
+   "https://media.takealot.com/covers_images/a8de5f6649854d9db831b29b47008581/s-{size}.file",
+   "https://media.takealot.com/covers_images/f8d8b3027c0f4dbdba9df10c1934de3e/s-{size}.file",
+   "https://media.takealot.com/covers_images/5ead496f9e684b099532ab8d2b1082ed/s-{size}.file",
+   "https://media.takealot.com/covers_images/7a8f457d55af48e5ac26bfabb80c09f3/s-{size}.file",
+   "https://media.takealot.com/covers_images/0156e04f9fbf4002b24249a6599814ff/s-{size}.file",
+   "https://media.takealot.com/covers_images/31e68d07fc7e42c5ad87a596630fb828/s-{size}.file",
+   "https://media.takealot.com/covers_images/693f3f8343994d749a56511f67874003/s-{size}.file",
+   "https://media.takealot.com/covers_images/90ec9c361e624e6da0aa122651b68418/s-{size}.file",
+   "https://media.takealot.com/covers_images/c2900b72d0ce48fb90989d5e559e5fa1/s-{size}.file",
+   "https://media.takealot.com/covers_images/1d579227548a406a88cde08330e66fdd/s-{size}.file",
+   "https://media.takealot.com/covers_images/dbd25fa20fef4694b7c5ab30ee06a3ac/s-{size}.file",
+   "https://media.takealot.com/covers_images/deb43205c8d64c98afa20eddedadcd7e/s-{size}.file",
+   "https://media.takealot.com/covers_images/2bef8271a8ed4abfaab73791d6d96032/s-{size}.file",
+   "https://media.takealot.com/covers_images/8339b8c0f2724b31a9f58da30080a2b9/s-{size}.file",
+   "https://media.takealot.com/covers_images/d29089f831764188be322a1f36c9b52f/s-{size}.file",
+   "https://media.takealot.com/covers_images/46fe1a89dcca47c1b4a1b6226adde513/s-{size}.file",
+   "https://media.takealot.com/covers_images/a82cd8b59f4b46d490c4369ce0d9f8d7/s-{size}.file",
+   "https://media.takealot.com/covers_images/511ad2228f144d628226ec40ce05c445/s-{size}.file",
+   "https://media.takealot.com/covers_images/5744319421074868b1ecc3832d923ee8/s-{size}.file",
+   "https://media.takealot.com/covers_images/2b9c00382c31490fae1bf2f56e0524c4/s-{size}.file",
+   "https://media.takealot.com/covers_images/4e9b7fdb45374676a685c2b8bcd23632/s-{size}.file",
+   "https://media.takealot.com/covers_images/d3ac33e330bc4a85a24ab6b414c4fdf5/s-{size}.file",
+   "https://media.takealot.com/covers_images/58df1c25f1b9471b84862b7474cfd0de/s-{size}.file",
+   "https://media.takealot.com/covers_images/2c30a718b4314b3880762ed69b9a0549/s-{size}.file",
+   "https://media.takealot.com/covers_images/9a4a54cf07914c5bbd860a3481e85d72/s-{size}.file",
+   "https://media.takealot.com/covers_images/82e7d9f488244eac99a698e01deba0ea/s-{size}.file",
+   "https://media.takealot.com/covers_images/83c9ec31eb884097831a9ea921d42843/s-{size}.file",
+   "https://media.takealot.com/covers_images/fb4a239b12bf4f5ab3415b050818f14d/s-{size}.file",
+   "https://media.takealot.com/covers_images/42d2d23d4d5d42569448f4dcd361f57c/s-{size}.file",
+   "https://media.takealot.com/covers_images/c03207cb2c5a4db6bf204119a9570ac0/s-{size}.file",
+   "https://media.takealot.com/covers_images/3561e9ebf4864f39a162be83f3400283/s-{size}.file",
+   "https://media.takealot.com/covers_images/8dbb664d73cf43049dd7f9e92c7587f3/s-{size}.file",
+   "https://media.takealot.com/covers_images/04c74323ea0645b280dd84078de88dce/s-{size}.file",
+   "https://media.takealot.com/covers_images/3ec877df8c6a47f9a62edd07d2be0e13/s-{size}.file",
+   "https://media.takealot.com/covers_images/5119dcd5c5484605b177937052f8797d/s-{size}.file",
+   "https://media.takealot.com/covers_images/bf57dbc3d9b544cd952d59649055c352/s-{size}.file",
+   "https://media.takealot.com/covers_images/bc00a40fcb584c7b998942237f53fe9b/s-{size}.file",
+   "https://media.takealot.com/covers_images/ee4b938b58e64397948e4435a8c9b069/s-{size}.file",
+   "https://media.takealot.com/covers_images/b3b53988e7e04bde98cd773cf3baa703/s-{size}.file",
+   "https://media.takealot.com/covers_images/438746f10744408680c21f2f6ec109d7/s-{size}.file",
+   "https://media.takealot.com/covers_images/2957ba52d4294845be5164c96e8f5450/s-{size}.file",
+   "https://media.takealot.com/covers_images/df5b0b69dea64b949bb9d657f892e2f6/s-{size}.file",
+   "https://media.takealot.com/covers_images/747e16c5becd4a48b8b5e1113f03f662/s-{size}.file",
+   "https://media.takealot.com/covers_images/475f1e5124e74e2ea7541b75674ac1e7/s-{size}.file",
+   "https://media.takealot.com/covers_images/a4c876585a024638930c9ab552d7f00a/s-{size}.file",
+   "https://media.takealot.com/covers_images/df6d5b8f260a4ba5b9a010964a668c07/s-{size}.file",
+   "https://media.takealot.com/covers_images/8e12d2fd253d4f5abcc0f41fe1e2001f/s-{size}.file",
+   "https://media.takealot.com/covers_images/c40a230635fa4b0783d7fcf824d80c39/s-{size}.file",
+   "https://media.takealot.com/covers_images/085ba78e4f66487f83653f8df513bfcc/s-{size}.file",
+   "https://media.takealot.com/covers_images/6835ed52c4254f35a7bf3370c011efb1/s-{size}.file",
+   "https://media.takealot.com/covers_images/f4f0db50a76044d48960a3196221b68b/s-{size}.file",
+   "https://media.takealot.com/covers_images/cafdb406828d4a21b55305d813c88211/s-{size}.file",
+   "https://media.takealot.com/covers_images/767def46a8c943418647e7a4ffbb8041/s-{size}.file",
+   "https://media.takealot.com/covers_images/d0e43b012089453cba8afe82ab83e59f/s-{size}.file",
+   "https://media.takealot.com/covers_images/a7317af3407d4bfbaf7b693d1aab4067/s-{size}.file",
+   "https://media.takealot.com/covers_images/837000c7be5441fc87f726574d532cf0/s-{size}.file",
+   "https://media.takealot.com/covers_images/63382c8fc9a04bce8e6d4e7650696f45/s-{size}.file",
+   "https://media.takealot.com/covers_images/c95a95f853c94e6f9c802c304b66b2ed/s-{size}.file",
+   "https://media.takealot.com/covers_images/f7c096bfdb7a411a803adc9d73398dff/s-{size}.file",
+   "https://media.takealot.com/covers_images/17e51466c1934b5dbe9656c99eb8fa96/s-{size}.file",
+   "https://media.takealot.com/covers_images/e243c8cd089c4e14a93351253a7d65a9/s-{size}.file",
+   "https://media.takealot.com/covers_images/8696a6cac29f4603a65bdd597839a233/s-{size}.file",
+   "https://media.takealot.com/covers_images/160f8669bf25491588c65489b0496864/s-{size}.file",
+   "https://media.takealot.com/covers_images/c73a71f27c3d46849676be07ee2ea5a4/s-{size}.file",
+   "https://media.takealot.com/covers_images/bdf76737e265401197f287f2519f19b2/s-{size}.file",
+   "https://media.takealot.com/covers_images/b6a70feca13040b09eff2fbffdcdcb84/s-{size}.file",
+   "https://media.takealot.com/covers_images/eb88bc510b8643529a291df584ce5e86/s-{size}.file",
+   "https://media.takealot.com/covers_images/d305d826887848af855f5ae54c0c9e01/s-{size}.file",
+   "https://media.takealot.com/covers_images/5a4e9e8dd5e34783bb2f2e8cd368bd7f/s-{size}.file",
+   "https://media.takealot.com/covers_images/bd671e6781514357ac137616d4dca301/s-{size}.file",
+   "https://media.takealot.com/covers_images/c2fa5246bb254c0c85fe874424a4b7ae/s-{size}.file",
+   "https://media.takealot.com/covers_images/5830ef94dcdf428ab137a4f5697b88c4/s-{size}.file",
+   "https://media.takealot.com/covers_images/b649c9dd30d54a768e7d16df7617b5dc/s-{size}.file",
+   "https://media.takealot.com/covers_images/2469a7c5a62c47a7a3f1f4034264fd0b/s-{size}.file",
+   "https://media.takealot.com/covers_images/35b60734c15849b4b41dc88ba64fb2b2/s-{size}.file",
+   "https://media.takealot.com/covers_images/dc1d8a9d28244ca981acbd80c09f1a65/s-{size}.file",
+   "https://media.takealot.com/covers_images/23a4a351044b4130af01f675716dd2a1/s-{size}.file",
+   "https://media.takealot.com/covers_images/e0898d8936024ac48f097fa435a7689a/s-{size}.file",
+   "https://media.takealot.com/covers_images/d8a8f865cfaf4c36ac47dd7e453e2ff0/s-{size}.file",
+   "https://media.takealot.com/covers_images/ee00c404df9a489c8fa9b56db71e7381/s-{size}.file",
+   "https://media.takealot.com/covers_images/992aa96f5fe842b789db77b364a2c093/s-{size}.file",
+   "https://media.takealot.com/covers_images/2f5fbaa117bf4080bffdf4afcac09155/s-{size}.file",
+   "https://media.takealot.com/covers_images/bdfeee175353429fa592a601e0609aad/s-{size}.file",
+   "https://media.takealot.com/covers_images/a744867f78a04787b13cb949df8a668f/s-{size}.file",
+   "https://media.takealot.com/covers_images/4eb4948b309948cda89629cc8e6783a2/s-{size}.file",
+   "https://media.takealot.com/covers_images/868b74bf1e6245ee93e56b854f0074bb/s-{size}.file",
+   "https://media.takealot.com/covers_images/30d957460dc640f690b4a780f4d33085/s-{size}.file",
+   "https://media.takealot.com/covers_images/eb01fb19e38a49058b2c813caf844381/s-{size}.file",
+   "https://media.takealot.com/covers_images/46dc01e51945436badd6b27fc3bddc6b/s-{size}.file",
+   "https://media.takealot.com/covers_images/14290eba971c48e58c32fdb8a00d9cde/s-{size}.file",
+   "https://media.takealot.com/covers_images/5ce4e8a1216e46e2be0c8903ca74ee21/s-{size}.file",
+   "https://media.takealot.com/covers_images/7650ac207c4543488fbf31498e7a22e0/s-{size}.file",
+   "https://media.takealot.com/covers_images/7e07916c0a7b4de58ef8174ca1b097cf/s-{size}.file",
+   "https://media.takealot.com/covers_images/2c4f25dfa477464d9727b9f910d2e4a5/s-{size}.file",
+   "https://media.takealot.com/covers_images/f7530baad6414f98bde1841d9b4193e8/s-{size}.file",
+   "https://media.takealot.com/covers_images/b441cc71bbd14318b8adf7924a9d09e4/s-{size}.file",
+   "https://media.takealot.com/covers_images/d4bcd733ee3b4ca5b4f727c47585608e/s-{size}.file",
+   "https://media.takealot.com/covers_images/38472254194c4972a8100f78ed99284a/s-{size}.file",
+   "https://media.takealot.com/covers_images/3e72c2ec79424587bd7b616aac0c51aa/s-{size}.file",
+   "https://media.takealot.com/covers_images/32c70e2c336a451fbd039ed3ced5f89a/s-{size}.file",
+   "https://media.takealot.com/covers_images/1ca746b921fd40f288eb1686e7e8a51a/s-{size}.file",
+   "https://media.takealot.com/covers_images/0e1486b391b5483cadf611768301fa83/s-{size}.file",
+   "https://media.takealot.com/covers_images/3865ecfb846543df9711a5651e6676ee/s-{size}.file",
+   "https://media.takealot.com/covers_images/3c3cb40ef5264c249e4dca3933c44a17/s-{size}.file",
+   "https://media.takealot.com/covers_images/e246c03774c7407eb22f85f5f94330c0/s-{size}.file",
+   "https://media.takealot.com/covers_images/300a324155784d19ba262fe88c5d98a1/s-{size}.file",
+   "https://media.takealot.com/covers_images/314fd5748ac040fe9408fb6ee69bd57b/s-{size}.file"
+  ],
+  "items": [
+   {
+    "image": "https://media.takealot.com/covers_images/1427ad0c372b40638dde728f596ab636/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/95f3c28615ed4186b6feed565448e0e7/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/77ff9f39dd1440b185131bc47d8b936e/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/344f16e3cc0b484e954fe9dd6699f7c5/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/cc8cb13613db4136bc21f6bb7bdc5070/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/92a6b0c77c444567947dd8893d20f125/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/fb6184f7777745f38197ebaf43905384/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/9fb531e981b14affb0491a19012bc27d/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/1b4637a8ba5d45ccb51c1bf831195465/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/5d815f1f9dc94a4db81a7e883087fb08/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/17cb633bc85c42ac9e8aa810d081e5ef/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/ab4ff9e3a4ec4ebf9475bff4914b1492/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/4f6be89e9b33482c95b3ec75777ed5e2/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2374057013d9408d91a15e0ed77a47b6/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/d1835c914d98402087b21b23f304ab30/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/e0823c27636e46299bac502e24068390/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/446f8f750b874602b1b2b0711b44c382/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/70ccb81b3a9c44b4bd743530dd69fdc0/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/594fc5a7b3154d79bf5fdd50cc6f37c7/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/9c28b4f04cb74f30ab7a5867cf49af3b/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/4a9a97229d464bd8b23044ac4c4a15d9/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/7210c2692767426aae1f3438ccf558c7/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/c44d358e4246478fa487557bc91dcd38/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/bc4a3bc89e9c4dae99d4ab5fbf449c50/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/b4aecc6ddb2a4956b20f342011093872/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2f69943804534577b6185819f31d043b/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/fc29c83367f2417eb9937eff2fffea0d/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/1a7fb70a401a4cb290c3549b1034c3e7/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/f70717fdfe614855827bea1846b481ff/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/1cf9b607c9664e5899442080e964b782/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/187d36d6c6734745843a66b91a54dfcd/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2f751124a11941928897bbc2031d5a2b/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/c574ad566438496abb43092a07471fa3/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/95ad1f7ddda242469a63ef70487309ba/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/d8a6ada48e9045429e3156bc73166663/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/4185ee7679754a2f84e8627c7ad3cee3/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/a8de5f6649854d9db831b29b47008581/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/f8d8b3027c0f4dbdba9df10c1934de3e/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/5ead496f9e684b099532ab8d2b1082ed/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/7a8f457d55af48e5ac26bfabb80c09f3/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/0156e04f9fbf4002b24249a6599814ff/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/31e68d07fc7e42c5ad87a596630fb828/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/693f3f8343994d749a56511f67874003/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/90ec9c361e624e6da0aa122651b68418/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/c2900b72d0ce48fb90989d5e559e5fa1/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/1d579227548a406a88cde08330e66fdd/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/dbd25fa20fef4694b7c5ab30ee06a3ac/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/deb43205c8d64c98afa20eddedadcd7e/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2bef8271a8ed4abfaab73791d6d96032/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/8339b8c0f2724b31a9f58da30080a2b9/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/d29089f831764188be322a1f36c9b52f/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/46fe1a89dcca47c1b4a1b6226adde513/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/a82cd8b59f4b46d490c4369ce0d9f8d7/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/511ad2228f144d628226ec40ce05c445/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/5744319421074868b1ecc3832d923ee8/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2b9c00382c31490fae1bf2f56e0524c4/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/4e9b7fdb45374676a685c2b8bcd23632/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/d3ac33e330bc4a85a24ab6b414c4fdf5/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/58df1c25f1b9471b84862b7474cfd0de/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2c30a718b4314b3880762ed69b9a0549/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/9a4a54cf07914c5bbd860a3481e85d72/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/82e7d9f488244eac99a698e01deba0ea/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/83c9ec31eb884097831a9ea921d42843/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/fb4a239b12bf4f5ab3415b050818f14d/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/42d2d23d4d5d42569448f4dcd361f57c/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/c03207cb2c5a4db6bf204119a9570ac0/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/3561e9ebf4864f39a162be83f3400283/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/8dbb664d73cf43049dd7f9e92c7587f3/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/04c74323ea0645b280dd84078de88dce/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/3ec877df8c6a47f9a62edd07d2be0e13/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/5119dcd5c5484605b177937052f8797d/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/bf57dbc3d9b544cd952d59649055c352/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/bc00a40fcb584c7b998942237f53fe9b/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/ee4b938b58e64397948e4435a8c9b069/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/b3b53988e7e04bde98cd773cf3baa703/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/438746f10744408680c21f2f6ec109d7/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2957ba52d4294845be5164c96e8f5450/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/df5b0b69dea64b949bb9d657f892e2f6/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/747e16c5becd4a48b8b5e1113f03f662/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/475f1e5124e74e2ea7541b75674ac1e7/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/a4c876585a024638930c9ab552d7f00a/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/df6d5b8f260a4ba5b9a010964a668c07/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/8e12d2fd253d4f5abcc0f41fe1e2001f/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/c40a230635fa4b0783d7fcf824d80c39/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/085ba78e4f66487f83653f8df513bfcc/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/6835ed52c4254f35a7bf3370c011efb1/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/f4f0db50a76044d48960a3196221b68b/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/cafdb406828d4a21b55305d813c88211/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/767def46a8c943418647e7a4ffbb8041/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/d0e43b012089453cba8afe82ab83e59f/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/a7317af3407d4bfbaf7b693d1aab4067/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/837000c7be5441fc87f726574d532cf0/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/63382c8fc9a04bce8e6d4e7650696f45/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/c95a95f853c94e6f9c802c304b66b2ed/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/f7c096bfdb7a411a803adc9d73398dff/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/17e51466c1934b5dbe9656c99eb8fa96/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/e243c8cd089c4e14a93351253a7d65a9/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/8696a6cac29f4603a65bdd597839a233/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/160f8669bf25491588c65489b0496864/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/c73a71f27c3d46849676be07ee2ea5a4/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/bdf76737e265401197f287f2519f19b2/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/b6a70feca13040b09eff2fbffdcdcb84/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/eb88bc510b8643529a291df584ce5e86/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/d305d826887848af855f5ae54c0c9e01/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/5a4e9e8dd5e34783bb2f2e8cd368bd7f/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/bd671e6781514357ac137616d4dca301/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/c2fa5246bb254c0c85fe874424a4b7ae/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/5830ef94dcdf428ab137a4f5697b88c4/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/b649c9dd30d54a768e7d16df7617b5dc/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2469a7c5a62c47a7a3f1f4034264fd0b/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/35b60734c15849b4b41dc88ba64fb2b2/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/dc1d8a9d28244ca981acbd80c09f1a65/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/23a4a351044b4130af01f675716dd2a1/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/e0898d8936024ac48f097fa435a7689a/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/d8a8f865cfaf4c36ac47dd7e453e2ff0/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/ee00c404df9a489c8fa9b56db71e7381/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/992aa96f5fe842b789db77b364a2c093/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2f5fbaa117bf4080bffdf4afcac09155/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/bdfeee175353429fa592a601e0609aad/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/a744867f78a04787b13cb949df8a668f/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/4eb4948b309948cda89629cc8e6783a2/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/868b74bf1e6245ee93e56b854f0074bb/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/30d957460dc640f690b4a780f4d33085/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/eb01fb19e38a49058b2c813caf844381/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/46dc01e51945436badd6b27fc3bddc6b/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/14290eba971c48e58c32fdb8a00d9cde/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/5ce4e8a1216e46e2be0c8903ca74ee21/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/7650ac207c4543488fbf31498e7a22e0/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/7e07916c0a7b4de58ef8174ca1b097cf/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/2c4f25dfa477464d9727b9f910d2e4a5/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/f7530baad6414f98bde1841d9b4193e8/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/b441cc71bbd14318b8adf7924a9d09e4/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/d4bcd733ee3b4ca5b4f727c47585608e/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/38472254194c4972a8100f78ed99284a/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/3e72c2ec79424587bd7b616aac0c51aa/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/32c70e2c336a451fbd039ed3ced5f89a/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/1ca746b921fd40f288eb1686e7e8a51a/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/0e1486b391b5483cadf611768301fa83/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/3865ecfb846543df9711a5651e6676ee/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/3c3cb40ef5264c249e4dca3933c44a17/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/e246c03774c7407eb22f85f5f94330c0/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/300a324155784d19ba262fe88c5d98a1/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/314fd5748ac040fe9408fb6ee69bd57b/s-{size}.file",
+    "type": "image"
+   }
+  ]
+ },
+ "product_information": {
+  "categories": {
+   "id": "categories-0",
+   "display_name": "Categories",
+   "source": "productline-categories",
+   "content_type": "application/vnd.takealot.product-information-hyperlink",
+   "displayable_text": [
+    [
+     {
+      "display_value": "Cellphones & Wearables",
+      "link_data": {
+       "action": "search",
+       "context": "navigation",
+       "parameters": {
+        "search": {
+         "filters": {
+          "Type": 16,
+          "Available": true
+         }
+        }
+       }
+      }
+     },
+     {
+      "display_value": "Cellular Accessories",
+      "link_data": {
+       "action": "search",
+       "context": "navigation",
+       "parameters": {
+        "search": {
+         "filters": {
+          "Type": 16,
+          "Category": 26251,
+          "Available": true
+         }
+        }
+       }
+      }
+     },
+     {
+      "display_value": "Cellphone Cables",
+      "link_data": {
+       "action": "search",
+       "context": "navigation",
+       "parameters": {
+        "search": {
+         "filters": {
+          "Type": 16,
+          "Category": 26254,
+          "Available": true
+         }
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  "items": [
+   {
+    "id": "attributes-0",
+    "display_name": "Brand",
+    "source": "product-line-attribute-service",
+    "content_type": "application/vnd.takealot.product-information-hyperlink",
+    "displayable_text": [
+     [
+      {
+       "display_value": "TROO",
+       "link_data": {
+        "action": "search",
+        "context": "navigation",
+        "parameters": {
+         "search": {
+          "filters": {
+           "Available": true,
+           "Brand": "TROO"
+          }
+         }
+        }
+       }
+      }
+     ]
+    ],
+    "item_type": "brand"
+   },
+   {
+    "id": "attributes-1",
+    "display_name": "Warranty",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "Full (60 months)"
+      }
+     ]
+    ],
+    "item_type": "warranty"
+   },
+   {
+    "id": "attributes-2",
+    "display_name": "Cable Type",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "USB Type-C Cable"
+      }
+     ]
+    ],
+    "item_type": "cable_type"
+   },
+   {
+    "id": "attributes-3",
+    "display_name": "Model",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "SGM01-1"
+      }
+     ]
+    ],
+    "item_type": "model_number"
+   },
+   {
+    "id": "attributes-4",
+    "display_name": "Connector Type",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "USB"
+      }
+     ]
+    ],
+    "item_type": "connector_type"
+   },
+   {
+    "id": "attributes-5",
+    "display_name": "What's in the box",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "1 x TROO Certified Fast Charging 60W USB to Type-C Braided Cable (Android-Auto Ready) "
+      }
+     ]
+    ],
+    "item_type": "whats_in_the_box"
+   },
+   {
+    "id": "attributes-6",
+    "display_name": "Merchandising Tags",
+    "source": "product-line-attribute-service",
+    "content_type": "application/vnd.takealot.product-information-hyperlink",
+    "displayable_text": [
+     [
+      {
+       "display_value": "March 2022",
+       "link_data": {
+        "action": "search",
+        "context": "navigation",
+        "parameters": {
+         "search": {
+          "filters": {
+           "Available": true,
+           "MerchandisingTags": "March 2022"
+          }
+         }
+        }
+       }
+      }
+     ]
+    ],
+    "item_type": "merchandising_tags"
+   }
+  ],
+  "tab_title": "Product Information"
+ },
+ "description": {
+  "tab_title": "Description",
+  "html": "<p>The TROO Certified range of cabling and tech accessories is there to simplify your life because tech shouldn t be another thing you have to worry about. From fast-charging cables, wireless charging docks, AirPods, and smart watches, TROO makes tech easy, with solutions to suit your needs. TROO branded gadgets are faster, safer, and smarter and our durable products are designed to withstand your on-the-go lifestyle.</p><p></p><p>Why choose anything else? Trust TROO</p><p></p><p>TROO Certified Fast Charging 60W USB to Type-C Braided Cable (Android-Auto Ready)</p><p></p><p>BENEFITS</p><ul><li>Seemless Intergration with Android Auto</li><li>Fast Charging</li><li>5 Year Warranty</li><li>10 000+ bend durable design cable</li><li>Reinforced connector</li><li>Cable length: 1,2 OR 3 Meter</li><li>Power Output 60W Max 15V</li><li>To achieve fast charge (0-50% in 30 minutes) pair this cable with a TROO or any compatible 60W power adapter OR larger</li></ul><p></p><p>DISCLAIMER : This is a smart charge cable, the output is dependant on adapter it is paired with, together with the input the phone needs. Thus enabling 30W Minimun and 60W maximun.</p><p>What's in the box<br />\n1 x TROO Certified Fast Charging 60W USB to Type-C Braided Cable (Android-Auto Ready) </p>\n"
+ },
+ "bullet_point_attributes": {
+  "items": [
+   {
+    "description": "https://api.takealot.com/rest/v-1-18-0/product-details/messages/MD_HASSLE_FREE_EXCHANGES_RETURNS?platform=android",
+    "positive": true,
+    "text": "Hassle-Free Exchanges & Returns for 30 Days.",
+    "info_mode": "long",
+    "type": "hassle_free_exchanges_and_returns",
+    "id": "bullet-point-0"
+   },
+   {
+    "description": "Full warranty, as defined by the manufacturer",
+    "positive": true,
+    "text": "60-Month Full Warranty.",
+    "info_mode": "short",
+    "type": "warranty",
+    "id": "bullet-point-1"
+   }
+  ]
+ },
+ "reviews": {
+  "count": 2161,
+  "href": "https://api.takealot.com/rest/v-1-18-0/product-reviews/plid/90255552",
+  "tab_title": "Reviews (2161)",
+  "link_data": {
+   "path": "/rest/{api_version}/product-reviews/plid/{plid}",
+   "fields": {
+    "api_version": "v-1-18-0",
+    "plid": "90255552"
+   }
+  },
+  "star_rating": 4.7,
+  "distribution": {
+   "num_1_star_ratings": 57,
+   "num_2_star_ratings": 30,
+   "num_3_star_ratings": 68,
+   "num_4_star_ratings": 247,
+   "num_5_star_ratings": 1759
+  }
+ },
+ "meta": {
+  "identifier": "PLID90255552",
+  "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android",
+  "link_data": {
+   "path": "/rest/{api_version}/product-details/{plid}?platform={platform}",
+   "fields": {
+    "api_version": "v-1-18-0",
+    "plid": "PLID90255552",
+    "platform": "android"
+   }
+  },
+  "date_retrieved": "2026-09-26T23:12:36.727798",
+  "display": true,
+  "type": "ProductDetails"
+ },
+ "variants": {
+  "selectors": [
+   {
+    "selector_type": "colour_variant",
+    "ui_style": "colour-variant",
+    "action": "colour",
+    "title": "Colour",
+    "call_to_action": "Select a colour",
+    "options": [
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Apple+Red",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Apple+Red",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Apple Red"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Apple Red",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/1427ad0c372b40638dde728f596ab636/s-{size}.file"
+      ],
+      "id": "colour_variant-Apple Red"
+     },
+     {
+      "is_enabled": false,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Army+Camo",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Army+Camo",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Army Camo"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Army Camo",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/fb6184f7777745f38197ebaf43905384/s-{size}.file"
+      ],
+      "id": "colour_variant-Army Camo"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Atomic+Titanium",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Atomic+Titanium",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Atomic Titanium"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Atomic Titanium",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/2374057013d9408d91a15e0ed77a47b6/s-{size}.file"
+      ],
+      "id": "colour_variant-Atomic Titanium"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Baby+Pink",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Baby+Pink",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Baby Pink"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Baby Pink",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/4a9a97229d464bd8b23044ac4c4a15d9/s-{size}.file"
+      ],
+      "id": "colour_variant-Baby Pink"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Black",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Black",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Black"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Black",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/187d36d6c6734745843a66b91a54dfcd/s-{size}.file"
+      ],
+      "id": "colour_variant-Black"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Black+%26+Purple",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Black+%26+Purple",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Black & Purple"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Black & Purple",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/90ec9c361e624e6da0aa122651b68418/s-{size}.file"
+      ],
+      "id": "colour_variant-Black & Purple"
+     },
+     {
+      "is_enabled": false,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Black+%26+White",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Black+%26+White",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Black & White"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Black & White",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/4e9b7fdb45374676a685c2b8bcd23632/s-{size}.file"
+      ],
+      "id": "colour_variant-Black & White"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Lumo+Blue+%26+Purple",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Lumo+Blue+%26+Purple",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Lumo Blue & Purple"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Lumo Blue & Purple",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/3561e9ebf4864f39a162be83f3400283/s-{size}.file"
+      ],
+      "id": "colour_variant-Lumo Blue & Purple"
+     },
+     {
+      "is_enabled": false,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Lumo+Pink",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Lumo+Pink",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Lumo Pink"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Lumo Pink",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/2957ba52d4294845be5164c96e8f5450/s-{size}.file"
+      ],
+      "id": "colour_variant-Lumo Pink"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Navy+Blue",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Navy+Blue",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Navy Blue"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Navy Blue",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/f4f0db50a76044d48960a3196221b68b/s-{size}.file"
+      ],
+      "id": "colour_variant-Navy Blue"
+     },
+     {
+      "is_enabled": false,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Purple",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Purple",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Purple"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Purple",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/e243c8cd089c4e14a93351253a7d65a9/s-{size}.file"
+      ],
+      "id": "colour_variant-Purple"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Purple+%26+Black",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Purple+%26+Black",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Purple & Black"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Purple & Black",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/c2fa5246bb254c0c85fe874424a4b7ae/s-{size}.file"
+      ],
+      "id": "colour_variant-Purple & Black"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Purple+Extreme",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Purple+Extreme",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Purple Extreme"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Purple Extreme",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/992aa96f5fe842b789db77b364a2c093/s-{size}.file"
+      ],
+      "id": "colour_variant-Purple Extreme"
+     },
+     {
+      "is_enabled": false,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Red+%26+Navy",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Red+%26+Navy",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Red & Navy"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Red & Navy",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/5ce4e8a1216e46e2be0c8903ca74ee21/s-{size}.file"
+      ],
+      "id": "colour_variant-Red & Navy"
+     },
+     {
+      "is_enabled": false,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?colour_variant=Titanium+%26+Purple",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&colour_variant=Titanium+%26+Purple",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&colour_variant={colour_variant}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "colour_variant": "Titanium & Purple"
+       }
+      },
+      "value": {
+       "name": "REDACTED",
+       "value": "Titanium & Purple",
+       "type": "colour_variant",
+       "sort_order": null
+      },
+      "sort_order": -1,
+      "image": [
+       "https://media.takealot.com/covers_images/1ca746b921fd40f288eb1686e7e8a51a/s-{size}.file"
+      ],
+      "id": "colour_variant-Titanium & Purple"
+     }
+    ]
+   },
+   {
+    "selector_type": "size",
+    "ui_style": "clothing-size",
+    "action": "size",
+    "title": "Size",
+    "call_to_action": "Select a size",
+    "options": [
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?size=0.5+m",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&size=0.5+m",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&size={size}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "size": "0.5 m"
+       }
+      },
+      "value": "0.5 m",
+      "sort_order": -1,
+      "id": "size-0.5 m"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?size=1.0+m",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&size=1.0+m",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&size={size}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "size": "1.0 m"
+       }
+      },
+      "value": "1.0 m",
+      "sort_order": -1,
+      "id": "size-1.0 m"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?size=2.0+m",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&size=2.0+m",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&size={size}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "size": "2.0 m"
+       }
+      },
+      "value": "2.0 m",
+      "sort_order": -1,
+      "id": "size-2.0 m"
+     },
+     {
+      "is_enabled": true,
+      "is_selected": false,
+      "desktop_href": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552?size=3.0+m",
+      "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID90255552?platform=android&size=3.0+m",
+      "link_data": {
+       "path": "/rest/{api_version}/product-details/{plid}?platform={platform}&size={size}",
+       "fields": {
+        "api_version": "v-1-18-0",
+        "plid": "PLID90255552",
+        "platform": "android",
+        "size": "3.0 m"
+       }
+      },
+      "value": "3.0 m",
+      "sort_order": -1,
+      "id": "size-3.0 m"
+     }
+    ]
+   }
+  ],
+  "sizing_chart": null,
+  "measurement_guide": null
+ },
+ "exchanges_and_returns": {
+  "tab_title": "Exchanges and Returns",
+  "copy": "https://api.takealot.com/rest/v-1-18-0/product-details/messages/MD_EXCHANGES_AND_RETURNS?platform=android"
+ },
+ "pdp_ad_slots": {
+  "ad_slots": [
+   {
+    "targeting": {
+     "category": [
+      "26251",
+      "26254"
+     ],
+     "brand": "troo",
+     "environment": "production",
+     "platform": "android",
+     "plid": "90255552",
+     "type": [
+      "16"
+     ],
+     "price": "Under 1000"
+    },
+    "id": null,
+    "supported_sizes": [
+     [
+      300,
+      50
+     ]
+    ],
+    "type": "GoogleAdSlot",
+    "div_id": "div-gpt-ad-284828983611556094700957793321749568107",
+    "ad_unit": "/21681910165/pdp/pdp_300x50"
+   },
+   {
+    "targeting": {
+     "category": [
+      "26251",
+      "26254"
+     ],
+     "brand": "troo",
+     "environment": "production",
+     "platform": "android",
+     "plid": "90255552",
+     "type": [
+      "16"
+     ],
+     "price": "Under 1000"
+    },
+    "id": null,
+    "supported_sizes": [
+     [
+      300,
+      250
+     ]
+    ],
+    "type": "GoogleAdSlot",
+    "div_id": "div-gpt-ad-311395974770277483309924792878808169469",
+    "ad_unit": "/21681910165/pdp/pdp_300x250"
+   }
+  ]
+ },
+ "sharing": {
+  "url": "https://www.takealot.com/troo-certified-60w-fast-charge-usb-type-c-braided-cable-android-/PLID90255552",
+  "enabled": [],
+  "copy": "TROO Certified 60W Fast Charge USB Type-C Braided Cable Android Auto Ready available to buy online at @TAKEALOT We offer fast, reliable delivery to your door."
+ },
+ "event_data": {
+  "documents": {
+   "product": {
+    "product_line_id": 90255552,
+    "in_stock": false,
+    "market_place_listing": false,
+    "purchase_price": 99
+   }
+  }
+ },
+ "enhanced_ecommerce_detail": {
+  "ecommerce": {
+   "detail": {
+    "products": [
+     {
+      "id": "PLID90255552",
+      "name": "REDACTED",
+      "category": "Cellphones & Wearables/Cellular Accessories/Cellphone Cables",
+      "price": 189,
+      "quantity": 1,
+      "position": 0,
+      "brand": "TROO",
+      "variant": null,
+      "dimension1": null,
+      "dimension2": null
+     }
+    ],
+    "actionField": {
+     "list": "product"
+    }
+   }
+  },
+  "event": "eec.detail"
+ },
+ "enhanced_ecommerce_add_to_cart": {
+  "ecommerce": {
+   "add": {
+    "products": [
+     {
+      "id": "PLID90255552",
+      "name": "REDACTED",
+      "category": "Cellphones & Wearables/Cellular Accessories/Cellphone Cables",
+      "price": 189,
+      "quantity": 1,
+      "position": 0,
+      "brand": "TROO",
+      "variant": null,
+      "dimension1": null,
+      "dimension2": null
+     }
+    ]
+   },
+   "currencyCode": "ZAR"
+  },
+  "event": "addToCart"
+ }
+}

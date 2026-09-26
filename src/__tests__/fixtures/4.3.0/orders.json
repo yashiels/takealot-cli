@@ -1,0 +1,576 @@
+{
+ "result": "ok",
+ "status_code": 200,
+ "response": {
+  "order_count": 6,
+  "page_summary": {
+   "page_number": 0,
+   "page_size": 10,
+   "page_count": 1
+  },
+  "orders": [
+   {
+    "order_id": 900000001,
+    "obfuscated_order_id": "T0JGVVNDQVRFRDE",
+    "order_date": "2026-09-13",
+    "customer_id": 0,
+    "shipping_method_id": 1,
+    "shipping_method_display_name": "Next Business Day Delivery",
+    "shipping_fee_title": "Delivery",
+    "shipping_address": {
+     "address_id": "REDACTED",
+     "address": "REDACTED",
+     "city": "REDACTED",
+     "area": "REDACTED",
+     "postal_code": "REDACTED",
+     "recipient": "REDACTED",
+     "contact_number": "REDACTED",
+     "latitude": 0,
+     "longitude": 0,
+     "business_name": "REDACTED",
+     "complex_details": "REDACTED",
+     "province": "REDACTED",
+     "address_type": "residential",
+     "map_url": "REDACTED",
+     "pickup_point_name": ""
+    },
+    "payment_method_id": 0,
+    "payment_method_display_name": "Apple Pay",
+    "is_authorized": true,
+    "auth_status": "Auth",
+    "auth_user": "REDACTED",
+    "auth_date": "2026-09-13",
+    "total_amount": 336,
+    "subtotal": 246,
+    "discount": 0,
+    "ship_amount": 90,
+    "shipping_discount": 0,
+    "donation_amount": 0,
+    "credit_amount": 0,
+    "ebucks_amount": 0,
+    "auth_amount": 0,
+    "total_paid": 336,
+    "to_pay": 0,
+    "invoice_ids": [
+     281953900,
+     281953901,
+     281953902
+    ],
+    "consignments": [
+     {
+      "status_id": 6,
+      "status": "",
+      "title": "Delivered Mon, 14 Sep 2026",
+      "subtitle": "Signed by: Yashie (Customer)",
+      "backend_text": "",
+      "consignment_type_id": 4,
+      "consignment_type": "Shipment Consignment",
+      "collection_location": "",
+      "collection_address": {
+       "address": "REDACTED",
+       "city": "REDACTED",
+       "area": "REDACTED",
+       "postal_code": "REDACTED",
+       "contact_number": "REDACTED",
+       "latitude": 0,
+       "longitude": 0,
+       "map_url": "REDACTED",
+       "pickup_point_name": ""
+      },
+      "waybill_number": "REDACTED",
+      "is_trackable": true,
+      "is_waiting": false,
+      "why_the_wait_message": "",
+      "has_alert_event": false,
+      "is_cancellation_requested": false,
+      "alert_message": "",
+      "is_internal": false,
+      "parcel_count": 2,
+      "collection_code": "",
+      "tooltip": "",
+      "is_returnable": true,
+      "order_items": [
+       {
+        "product_id": 219459879,
+        "title": "Sanitiser24 Hand & Surface Sanitiser - 1 X 500ml - 70% (Isopropyl Alcohol)",
+        "quantity": 1,
+        "unit_price": 89,
+        "line_total": 89,
+        "is_trackable": true,
+        "is_returnable": true,
+        "order_item_id": 444338029,
+        "is_returned": false,
+        "is_digital": false,
+        "is_pre_order": false,
+        "metadata": {},
+        "sku": {
+         "sku_id": 219459879,
+         "tsin_id": 97457956,
+         "plid": "PLID96363181",
+         "title": "Sanitiser24 Hand & Surface Sanitiser - 1 X 500ml - 70% (Isopropyl Alcohol)",
+         "country_code": "ZA",
+         "is_liquor": false,
+         "is_tv_license_required": false,
+         "is_ebook": false,
+         "is_pre_order": false,
+         "is_pre_paid": false,
+         "is_voucher": false,
+         "is_available": true,
+         "is_active": true,
+         "cover": "covers_images/cae79919f91148fb8a8ebc91f63e9932/s.file",
+         "uri": "/sanitiser24-hand-surface-sanitiser-1-x-500ml-70-isopropyl-alcoho/PLID96363181",
+         "is_seller_listing": true,
+         "seller_id": 29839355,
+         "seller_name": "DropDrop",
+         "selling_price": 89,
+         "web_selling_price": 89,
+         "old_selling_price": 109,
+         "shipping_information": "",
+         "stock": {
+          "is_supplier": false,
+          "supplier_qty": 50,
+          "jhb_qty": 28,
+          "cpt_qty": 56,
+          "dbn_qty": 21
+         },
+         "rating": {
+          "count": 36,
+          "average": 4.579999923706055
+         },
+         "images": {
+          "small": "https://media.takealot.com/covers_images/cae79919f91148fb8a8ebc91f63e9932/s-xlthumbnail.file",
+          "large": "https://media.takealot.com/covers_images/cae79919f91148fb8a8ebc91f63e9932/s-xlpreview.file",
+          "listing": "https://media.takealot.com/covers_images/cae79919f91148fb8a8ebc91f63e9932/s-listgrid.file",
+          "full": "https://media.takealot.com/covers_images/cae79919f91148fb8a8ebc91f63e9932/s-full.file",
+          "fb": "https://media.takealot.com/covers_images/cae79919f91148fb8a8ebc91f63e9932/s-fb.file"
+         }
+        }
+       },
+       {
+        "product_id": 236715192,
+        "title": "4K HDMI Dummy Plug Virtual Monitor EDID Emulator Headless Display Adapter - Black",
+        "quantity": 1,
+        "unit_price": 157,
+        "line_total": 157,
+        "is_trackable": true,
+        "is_returnable": true,
+        "order_item_id": 444338030,
+        "is_returned": false,
+        "is_digital": false,
+        "is_pre_order": false,
+        "metadata": {},
+        "sku": {
+         "sku_id": 236715192,
+         "tsin_id": 104296122,
+         "plid": "PLID102375433",
+         "title": "4K HDMI Dummy Plug Virtual Monitor EDID Emulator Headless Display Adapter - Black",
+         "country_code": "ZA",
+         "is_liquor": false,
+         "is_tv_license_required": false,
+         "is_ebook": false,
+         "is_pre_order": false,
+         "is_pre_paid": false,
+         "is_voucher": false,
+         "is_available": true,
+         "is_active": true,
+         "cover": "covers_images/ca32841efd034c12ae1d531b33e095e1/s.file",
+         "uri": "/4k-hdmi-dummy-plug-virtual-monitor-edid-emulator-headless-displa/PLID102375433",
+         "is_seller_listing": true,
+         "seller_id": 29894112,
+         "seller_name": "koko trade trading house",
+         "selling_price": 95,
+         "web_selling_price": 95,
+         "old_selling_price": 300,
+         "shipping_information": "",
+         "stock": {
+          "is_supplier": false,
+          "supplier_qty": 111,
+          "jhb_qty": 11,
+          "cpt_qty": 10,
+          "dbn_qty": 0
+         },
+         "rating": {
+          "count": 0,
+          "average": 0
+         },
+         "images": {
+          "small": "https://media.takealot.com/covers_images/ca32841efd034c12ae1d531b33e095e1/s-xlthumbnail.file",
+          "large": "https://media.takealot.com/covers_images/ca32841efd034c12ae1d531b33e095e1/s-xlpreview.file",
+          "listing": "https://media.takealot.com/covers_images/ca32841efd034c12ae1d531b33e095e1/s-listgrid.file",
+          "full": "https://media.takealot.com/covers_images/ca32841efd034c12ae1d531b33e095e1/s-full.file",
+          "fb": "https://media.takealot.com/covers_images/ca32841efd034c12ae1d531b33e095e1/s-fb.file"
+         }
+        }
+       }
+      ],
+      "cancellation_eligibility": {
+       "type": "post-obi"
+      }
+     }
+    ],
+    "is_awaiting_payment": false,
+    "is_fully_cancelled": false,
+    "receipts": [
+     {
+      "payment_date": "2026-09-13",
+      "payment_amount": 336,
+      "payment_method_id": 0,
+      "payment_method_display_name": "Apple Pay",
+      "status": "",
+      "reference": "YXBwbGVwYXl0cmFuc2FjdGlvbi85YmFmZTg3MS1iMWVkLTQwZWYtOTY2Yi1hNGJkYTY5MjM4NTM="
+     }
+    ],
+    "waybills": "MDX198069496"
+   },
+   {
+    "order_id": 900000002,
+    "obfuscated_order_id": "T0JGVVNDQVRFRDI",
+    "order_date": "2026-07-12",
+    "customer_id": 0,
+    "shipping_method_id": 1,
+    "shipping_method_display_name": "Standard Delivery",
+    "shipping_fee_title": "Delivery",
+    "shipping_address": {
+     "address_id": "REDACTED",
+     "address": "REDACTED",
+     "city": "REDACTED",
+     "area": "REDACTED",
+     "postal_code": "REDACTED",
+     "recipient": "REDACTED",
+     "contact_number": "REDACTED",
+     "latitude": 0,
+     "longitude": 0,
+     "business_name": "REDACTED",
+     "complex_details": "REDACTED",
+     "province": "REDACTED",
+     "address_type": "residential",
+     "map_url": "REDACTED",
+     "pickup_point_name": ""
+    },
+    "payment_method_id": 0,
+    "payment_method_display_name": "Apple Pay",
+    "is_authorized": true,
+    "auth_status": "Auth",
+    "auth_user": "REDACTED",
+    "auth_date": "2026-07-13",
+    "total_amount": 708,
+    "subtotal": 633,
+    "discount": 0,
+    "ship_amount": 75,
+    "shipping_discount": 0,
+    "donation_amount": 0,
+    "credit_amount": 0,
+    "ebucks_amount": 0,
+    "auth_amount": 0,
+    "total_paid": 708,
+    "to_pay": 0,
+    "invoice_ids": [
+     270964683,
+     270964684,
+     270964685,
+     270964686,
+     270964687
+    ],
+    "consignments": [
+     {
+      "status_id": 6,
+      "status": "",
+      "title": "Delivered Thu, 16 Jul 2026",
+      "subtitle": "Signed by: Luciane (Family)",
+      "backend_text": "",
+      "consignment_type_id": 4,
+      "consignment_type": "Shipment Consignment",
+      "collection_location": "",
+      "collection_address": {
+       "address": "REDACTED",
+       "city": "REDACTED",
+       "area": "REDACTED",
+       "postal_code": "REDACTED",
+       "contact_number": "REDACTED",
+       "latitude": 0,
+       "longitude": 0,
+       "map_url": "REDACTED",
+       "pickup_point_name": ""
+      },
+      "waybill_number": "REDACTED",
+      "is_trackable": false,
+      "is_waiting": false,
+      "why_the_wait_message": "",
+      "has_alert_event": false,
+      "is_cancellation_requested": false,
+      "alert_message": "",
+      "is_internal": false,
+      "parcel_count": 2,
+      "collection_code": "",
+      "tooltip": "",
+      "is_returnable": true,
+      "order_items": [
+       {
+        "product_id": 218133040,
+        "title": "25W USB-C Fast Charging Adapter and Lightning Cable Compatible With Iphones",
+        "quantity": 3,
+        "unit_price": 102,
+        "line_total": 306,
+        "is_trackable": false,
+        "is_returnable": true,
+        "order_item_id": 430310410,
+        "is_returned": false,
+        "is_digital": false,
+        "is_pre_order": false,
+        "metadata": {},
+        "sku": {
+         "sku_id": 218133040,
+         "tsin_id": 92275467,
+         "plid": "PLID91974312",
+         "title": "25W USB-C Fast Charging Adapter and Lightning Cable Compatible With Iphones",
+         "country_code": "ZA",
+         "is_liquor": false,
+         "is_tv_license_required": false,
+         "is_ebook": false,
+         "is_pre_order": false,
+         "is_pre_paid": false,
+         "is_voucher": false,
+         "is_available": true,
+         "is_active": true,
+         "cover": "covers_images/cd8ac9f62bbc402da70b9b27e2b64e12/s.file",
+         "uri": "/25w-usb-c-fast-charging-adapter-and-lightning-cable-compatible-w/PLID91974312",
+         "is_seller_listing": true,
+         "seller_id": 29866377,
+         "seller_name": "Xclusive Xccessories ",
+         "selling_price": 102,
+         "web_selling_price": 102,
+         "old_selling_price": 249,
+         "shipping_information": "",
+         "stock": {
+          "is_supplier": false,
+          "supplier_qty": 0,
+          "jhb_qty": 29,
+          "cpt_qty": 0,
+          "dbn_qty": 0
+         },
+         "rating": {
+          "count": 1432,
+          "average": 3.7899999618530273
+         },
+         "images": {
+          "small": "https://media.takealot.com/covers_images/cd8ac9f62bbc402da70b9b27e2b64e12/s-xlthumbnail.file",
+          "large": "https://media.takealot.com/covers_images/cd8ac9f62bbc402da70b9b27e2b64e12/s-xlpreview.file",
+          "listing": "https://media.takealot.com/covers_images/cd8ac9f62bbc402da70b9b27e2b64e12/s-listgrid.file",
+          "full": "https://media.takealot.com/covers_images/cd8ac9f62bbc402da70b9b27e2b64e12/s-full.file",
+          "fb": "https://media.takealot.com/covers_images/cd8ac9f62bbc402da70b9b27e2b64e12/s-fb.file"
+         }
+        }
+       },
+       {
+        "product_id": 221563375,
+        "title": "Compatible Magsafe Clear Case / Back Cover -Magnetic For Apple iPhone 13",
+        "quantity": 2,
+        "unit_price": 80,
+        "line_total": 160,
+        "is_trackable": false,
+        "is_returnable": true,
+        "order_item_id": 430310411,
+        "is_returned": false,
+        "is_digital": false,
+        "is_pre_order": false,
+        "metadata": {},
+        "sku": {
+         "sku_id": 221563375,
+         "tsin_id": 91617152,
+         "plid": "PLID91413911",
+         "title": "Compatible Magsafe Clear Case / Back Cover -Magnetic For Apple iPhone 13",
+         "country_code": "ZA",
+         "is_liquor": false,
+         "is_tv_license_required": false,
+         "is_ebook": false,
+         "is_pre_order": false,
+         "is_pre_paid": false,
+         "is_voucher": false,
+         "is_available": true,
+         "is_active": true,
+         "cover": "covers_images/937ee639811543b0bcd54fa5bfdfaff2/s.file",
+         "uri": "/compatible-magsafe-clear-case-back-cover-magnetic-for-apple-ipho/PLID91413911",
+         "is_seller_listing": true,
+         "seller_id": 29838375,
+         "seller_name": "Hot deal sa",
+         "selling_price": 120,
+         "web_selling_price": 120,
+         "old_selling_price": 0,
+         "shipping_information": "",
+         "stock": {
+          "is_supplier": false,
+          "supplier_qty": 4,
+          "jhb_qty": 1,
+          "cpt_qty": 0,
+          "dbn_qty": 0
+         },
+         "rating": {
+          "count": 520,
+          "average": 4.159999847412109
+         },
+         "images": {
+          "small": "https://media.takealot.com/covers_images/937ee639811543b0bcd54fa5bfdfaff2/s-xlthumbnail.file",
+          "large": "https://media.takealot.com/covers_images/937ee639811543b0bcd54fa5bfdfaff2/s-xlpreview.file",
+          "listing": "https://media.takealot.com/covers_images/937ee639811543b0bcd54fa5bfdfaff2/s-listgrid.file",
+          "full": "https://media.takealot.com/covers_images/937ee639811543b0bcd54fa5bfdfaff2/s-full.file",
+          "fb": "https://media.takealot.com/covers_images/937ee639811543b0bcd54fa5bfdfaff2/s-fb.file"
+         }
+        }
+       },
+       {
+        "product_id": 224268082,
+        "title": "Protective Tempered Glass Compatible with iPhone 11 - Pack of 2",
+        "quantity": 1,
+        "unit_price": 89,
+        "line_total": 89,
+        "is_trackable": false,
+        "is_returnable": true,
+        "order_item_id": 430310412,
+        "is_returned": false,
+        "is_digital": false,
+        "is_pre_order": false,
+        "metadata": {},
+        "sku": {
+         "sku_id": 224268082,
+         "tsin_id": 59248155,
+         "plid": "PLID56142068",
+         "title": "Protective Tempered Glass Compatible with iPhone 11 - Pack of 2",
+         "country_code": "ZA",
+         "is_liquor": false,
+         "is_tv_license_required": false,
+         "is_ebook": false,
+         "is_pre_order": false,
+         "is_pre_paid": false,
+         "is_voucher": false,
+         "is_available": true,
+         "is_active": true,
+         "cover": "covers_tsins/59248155/59248155-1.jpeg",
+         "uri": "/protective-tempered-glass-compatible-with-iphone-11-pack-of-2/PLID56142068",
+         "is_seller_listing": true,
+         "seller_id": 29890817,
+         "seller_name": "ABS STAR",
+         "selling_price": 89,
+         "web_selling_price": 89,
+         "old_selling_price": 250,
+         "shipping_information": "",
+         "stock": {
+          "is_supplier": false,
+          "supplier_qty": 10,
+          "jhb_qty": 50,
+          "cpt_qty": 6,
+          "dbn_qty": 7
+         },
+         "rating": {
+          "count": 245,
+          "average": 3.680000066757202
+         },
+         "images": {
+          "small": "https://media.takealot.com/covers_tsins/59248155/59248155-1-xlthumbnail.jpeg",
+          "large": "https://media.takealot.com/covers_tsins/59248155/59248155-1-xlpreview.jpeg",
+          "listing": "https://media.takealot.com/covers_tsins/59248155/59248155-1-listgrid.jpeg",
+          "full": "https://media.takealot.com/covers_tsins/59248155/59248155-1-full.jpeg",
+          "fb": "https://media.takealot.com/covers_tsins/59248155/59248155-1-fb.jpeg"
+         }
+        }
+       },
+       {
+        "product_id": 226827509,
+        "title": "2 PACK iPhone 13 Screen Protector Guard Tempered Glass",
+        "quantity": 1,
+        "unit_price": 78,
+        "line_total": 78,
+        "is_trackable": false,
+        "is_returnable": true,
+        "order_item_id": 430310413,
+        "is_returned": false,
+        "is_digital": false,
+        "is_pre_order": false,
+        "metadata": {},
+        "sku": {
+         "sku_id": 226827509,
+         "tsin_id": 93361670,
+         "plid": "PLID92916799",
+         "title": "2 PACK iPhone 13 Screen Protector Guard Tempered Glass",
+         "country_code": "ZA",
+         "is_liquor": false,
+         "is_tv_license_required": false,
+         "is_ebook": false,
+         "is_pre_order": false,
+         "is_pre_paid": false,
+         "is_voucher": false,
+         "is_available": true,
+         "is_active": true,
+         "cover": "covers_images/3928ea4f66ae47208b2e88e22d653af9/s.file",
+         "uri": "/2-pack-iphone-13-screen-protector-guard-tempered-glass/PLID92916799",
+         "is_seller_listing": true,
+         "seller_id": 29891107,
+         "seller_name": "Meydan",
+         "selling_price": 78,
+         "web_selling_price": 78,
+         "old_selling_price": 0,
+         "shipping_information": "",
+         "stock": {
+          "is_supplier": false,
+          "supplier_qty": 40,
+          "jhb_qty": 61,
+          "cpt_qty": 27,
+          "dbn_qty": 24
+         },
+         "rating": {
+          "count": 225,
+          "average": 3.7200000286102295
+         },
+         "images": {
+          "small": "https://media.takealot.com/covers_images/3928ea4f66ae47208b2e88e22d653af9/s-xlthumbnail.file",
+          "large": "https://media.takealot.com/covers_images/3928ea4f66ae47208b2e88e22d653af9/s-xlpreview.file",
+          "listing": "https://media.takealot.com/covers_images/3928ea4f66ae47208b2e88e22d653af9/s-listgrid.file",
+          "full": "https://media.takealot.com/covers_images/3928ea4f66ae47208b2e88e22d653af9/s-full.file",
+          "fb": "https://media.takealot.com/covers_images/3928ea4f66ae47208b2e88e22d653af9/s-fb.file"
+         }
+        }
+       }
+      ],
+      "cancellation_eligibility": {
+       "type": "post-obi"
+      }
+     }
+    ],
+    "is_awaiting_payment": false,
+    "is_fully_cancelled": false,
+    "receipts": [
+     {
+      "payment_date": "2026-07-13",
+      "payment_amount": 708,
+      "payment_method_id": 0,
+      "payment_method_display_name": "Apple Pay",
+      "status": "",
+      "reference": "YXBwbGVwYXl0cmFuc2FjdGlvbi8xZTRmMjkwMS0yYWYwLTQ0MGYtODc0YS1mYjdlOTQ3NTM1Y2Q="
+     }
+    ],
+    "waybills": "MDX191881849"
+   }
+  ],
+  "sponsored_display": {
+   "slots": [
+    {
+     "id": "order_list_top",
+     "ad_unit": "order-list-top",
+     "type": "SponsoredDisplay"
+    }
+   ]
+  },
+  "help_page": {
+   "message": "Learn more about our {0}, or visit our {1}.",
+   "links": [
+    {
+     "text": "Return Policy",
+     "href": "https://www.takealot.com/help/exchange-return-policy"
+    },
+    {
+     "text": "Help Centre",
+     "href": "https://www.takealot.com/help-centre"
+    }
+   ]
+  }
+ }
+}

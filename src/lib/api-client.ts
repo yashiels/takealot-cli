@@ -24,6 +24,8 @@ import type {
   OrderItem,
   OrderSummary,
   PreferenceItem,
+  ProductDetails,
+  ProductVariant,
   SavedCard,
   SearchProduct,
   SearchResult,
@@ -143,6 +145,49 @@ function toRand(value: unknown): number {
 function plidToId(plid: unknown): number | undefined {
   const m = String(plid ?? '').match(/(\d+)/);
   return m ? Number(m[1]) : undefined;
+}
+
+function nullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+export function parseProductDetails(data: any, plid: number): ProductDetails {
+  const buybox = data?.buybox ?? {};
+  const item = buybox?.items?.[0] ?? {};
+  const core = data?.core ?? {};
+  const eventProduct = data?.event_data?.documents?.product ?? {};
+  const skuId = nullableNumber(item?.sku ?? eventProduct?.sku_id);
+  const status = String(item?.stock_availability?.status ?? '').toLowerCase();
+  const selectors: any[] = data?.variants?.selectors ?? [];
+  const variants: ProductVariant[] = selectors.flatMap((selector) =>
+    (selector?.options ?? []).map((option: any) => {
+      const rawValue = option?.value;
+      return {
+        title: String(selector?.title ?? ''),
+        value: String(typeof rawValue === 'object' ? rawValue?.value ?? '' : rawValue ?? ''),
+        plid: plidToId(option?.plid ?? option?.link_data?.fields?.plid) ?? null,
+        href: option?.href ?? option?.desktop_href ?? null,
+      };
+    }),
+  );
+
+  return {
+    plid,
+    skuId,
+    title: core?.title ?? data?.title ?? null,
+    brand: core?.brand ?? null,
+    price: nullableNumber(item?.price ?? eventProduct?.purchase_price),
+    prettyPrice: item?.pretty_price ?? null,
+    inStock: status
+      ? status.includes('in stock') || status.includes('in_stock') || status.startsWith('ships in')
+      : Boolean(eventProduct?.in_stock),
+    addToCart: Boolean(item?.is_add_to_cart_available),
+    rating: nullableNumber(core?.star_rating),
+    reviewCount: nullableNumber(core?.reviews) ?? 0,
+    variants,
+  };
 }
 
 /**
@@ -677,15 +722,30 @@ export class TakealotClient {
   }
 
   /** Resolve a PLID to its buyable SKU id via product-details. */
-  async skuForPlid(plid: number): Promise<number> {
+  async skuForPlid(plid: number, onResolved?: (product: ProductDetails) => void): Promise<number> {
     const data: any = await this.call('product.details', {
       params: { plid },
       query: { platform: DEFAULTS.platform, offer_opt: true },
     });
-    const pv = data?.product_views ?? data?.product ?? data ?? {};
-    const sku = pv?.buybox_summary?.product_id ?? data?.buybox_summary?.product_id;
-    if (!sku) throw new Error(`could not resolve a buyable SKU for PLID${plid}`);
-    return Number(sku);
+    const product = parseProductDetails(data, plid);
+    onResolved?.(product);
+    if (product.skuId === null) {
+      const choices = product.variants.map((variant) => `${variant.title}: ${variant.value}`).join(', ');
+      throw new UsageError(`PLID${plid} has variants; pick one: ${choices}`);
+    }
+    return product.skuId;
+  }
+
+  async resolveObfuscatedOrderId(orderId: string): Promise<string> {
+    if (!/^\d+$/.test(orderId)) return orderId;
+    for (let page = 0, pageCount = 1; page < pageCount; page++) {
+      const data: any = await this.call('orders.list', { query: { period: 'all', page_number: page } });
+      const response = data?.response ?? data ?? {};
+      const match = (response?.orders ?? []).find((order: any) => String(order?.order_id) === orderId);
+      if (match?.obfuscated_order_id) return String(match.obfuscated_order_id);
+      pageCount = Math.max(1, Number(response?.page_summary?.page_count) || 1);
+    }
+    throw new Error(`order ${orderId} not found`);
   }
 
   /** Update a cart line's quantity (PUT /cart/items). */

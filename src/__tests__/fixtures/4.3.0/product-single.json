@@ -1,0 +1,638 @@
+{
+ "title": "Powerade - Mountainblast - 24 x 500ml",
+ "desktop_href": "https://www.takealot.com/powerade-mountainblast-24-x-500ml/PLID52580339",
+ "core": {
+  "title": "Powerade - Mountainblast - 24 x 500ml",
+  "slug": "powerade-mountainblast-24-x-500ml",
+  "subtitle": "Sports Drink",
+  "brand": "Powerade",
+  "brand_url": {
+   "link_data": {
+    "path": "/all?filter=Brand:{brand_slug}",
+    "fields": {
+     "brand_slug": "Powerade"
+    },
+    "action": "search"
+   }
+  },
+  "star_rating": 4.9,
+  "reviews": 58,
+  "formats": [],
+  "authors": [],
+  "links": [
+   {
+    "display_value": "Shop All Soft Drinks",
+    "link_data": {
+     "action": "search",
+     "context": "navigation",
+     "parameters": {
+      "search": {
+       "filters": {
+        "Type": 35,
+        "Category": 25184
+       }
+      }
+     }
+    }
+   }
+  ],
+  "id": 52580339
+ },
+ "buybox": {
+  "plid": 52580339,
+  "tsin": 55525324,
+  "buybox_items_type": "single",
+  "is_digital": false,
+  "items": [
+   {
+    "is_selected": true,
+    "is_preorder": false,
+    "is_add_to_cart_available": true,
+    "is_add_to_wishlist_available": true,
+    "is_free_shipping_available": false,
+    "multibuy_display": false,
+    "delivery_charges": {},
+    "offer_detail": {
+     "preference": "fastest",
+     "display_text": "Fastest Delivery",
+     "icon_url": "https://static.takealot.com/images/buybox-icons/fastest.png"
+    },
+    "sku": 82448522,
+    "price": 359,
+    "pretty_price": "R 359",
+    "listing_price": 359,
+    "add_to_cart_text": "Add to Cart",
+    "sponsored_ads_seller_id": "R29825338",
+    "loyalty_prices": [
+     {
+      "id": "loyaltyprices-0",
+      "display_text": "eB3,590",
+      "prices": [
+       3590
+      ],
+      "info_text": null,
+      "description": null,
+      "info_mode": null,
+      "image": {
+       "source": "https://static.takealot.com/images/payment/x@example.com",
+       "title": "Ebucks",
+       "alt_text": "Ebucks logo"
+      }
+     },
+     {
+      "id": "loyaltyprices-1",
+      "display_text": "3,590",
+      "prices": [
+       3590
+      ],
+      "info_text": null,
+      "description": null,
+      "info_mode": null,
+      "image": {
+       "source": "https://static.takealot.com/images/payment/discovery-miles-logo.png",
+       "title": "DiscoveryMiles",
+       "alt_text": "Discovery Miles Logo"
+      }
+     }
+    ],
+    "stock_availability": {
+     "status": "In stock",
+     "is_leadtime": false,
+     "is_imported": false,
+     "distribution_centres": [
+      {
+       "id": "distribution_centre_0",
+       "text": "CPT",
+       "description": "This item can be shipped from Cape Town.",
+       "info_type": "short"
+      },
+      {
+       "id": "distribution_centre_1",
+       "text": "DBN",
+       "description": "This item can be shipped from Durban.",
+       "info_type": "short"
+      }
+     ],
+     "when_do_i_get_it_text": "Learn More",
+     "when_do_i_get_it_info": "https://api.takealot.com/rest/v-1-18-0/product-details/messages/WHEN_DO_I_GET_IT_IN_STOCK_TPP?platform=android",
+     "display_seasonal_message": false,
+     "seasonal_message_text": null,
+     "seasonal_message_info": null,
+     "estimated_delivery": {
+      "estimated_dates": "Delivery 27 Sep - 29 Sep",
+      "estimate_delivery_type": "standard",
+      "estimate_text": {
+       "description": "Delivery 27 Sep - 29 Sep",
+       "values": []
+      },
+      "countdown_text": null,
+      "terms_and_conditions_link": "T&Cs Apply",
+      "terms_and_conditions_text": "https://api.takealot.com/rest/v-1-18-0/product-details/messages/ESTIMATED_DELIVERY_T_C?platform=android",
+      "info_mode": "long"
+     }
+    },
+    "shipping_message": {
+     "description": "{0} {1}",
+     "values": [
+      {
+       "value_id": "0",
+       "type": "bold",
+       "value": "FREE Delivery with"
+      },
+      {
+       "value_id": "1",
+       "type": "link",
+       "value": "TAKEALOTMORE",
+       "url": "https://www.takealot.com/takealotmore"
+      }
+     ],
+     "code": "takealotmore"
+    }
+   }
+  ]
+ },
+ "breadcrumbs": {
+  "items": [
+   {
+    "id": 35,
+    "name": "REDACTED",
+    "slug": "liquor",
+    "type": "department"
+   },
+   {
+    "id": 25183,
+    "name": "REDACTED",
+    "slug": "non-alcoholic-25183",
+    "type": "category"
+   },
+   {
+    "id": 25184,
+    "name": "REDACTED",
+    "slug": "soft-drinks-25184",
+    "type": "category"
+   }
+  ]
+ },
+ "gallery": {
+  "images": [
+   "https://media.takealot.com/covers_images/7508be46e23d43d591717e9df74f414e/s-{size}.file",
+   "https://media.takealot.com/covers_images/4fd766beeab7444f9610a6666700e9f7/s-{size}.file"
+  ],
+  "items": [
+   {
+    "image": "https://media.takealot.com/covers_images/7508be46e23d43d591717e9df74f414e/s-{size}.file",
+    "type": "image"
+   },
+   {
+    "image": "https://media.takealot.com/covers_images/4fd766beeab7444f9610a6666700e9f7/s-{size}.file",
+    "type": "image"
+   }
+  ]
+ },
+ "product_information": {
+  "categories": {
+   "id": "categories-0",
+   "display_name": "Categories",
+   "source": "productline-categories",
+   "content_type": "application/vnd.takealot.product-information-hyperlink",
+   "displayable_text": [
+    [
+     {
+      "display_value": "Liquor",
+      "link_data": {
+       "action": "search",
+       "context": "navigation",
+       "parameters": {
+        "search": {
+         "filters": {
+          "Type": 35,
+          "Available": true
+         }
+        }
+       }
+      }
+     },
+     {
+      "display_value": "Non-Alcoholic",
+      "link_data": {
+       "action": "search",
+       "context": "navigation",
+       "parameters": {
+        "search": {
+         "filters": {
+          "Type": 35,
+          "Category": 25183,
+          "Available": true
+         }
+        }
+       }
+      }
+     },
+     {
+      "display_value": "Soft Drinks",
+      "link_data": {
+       "action": "search",
+       "context": "navigation",
+       "parameters": {
+        "search": {
+         "filters": {
+          "Type": 35,
+          "Category": 25184,
+          "Available": true
+         }
+        }
+       }
+      }
+     }
+    ]
+   ]
+  },
+  "items": [
+   {
+    "id": "attributes-0",
+    "display_name": "Brand",
+    "source": "product-line-attribute-service",
+    "content_type": "application/vnd.takealot.product-information-hyperlink",
+    "displayable_text": [
+     [
+      {
+       "display_value": "Powerade",
+       "link_data": {
+        "action": "search",
+        "context": "navigation",
+        "parameters": {
+         "search": {
+          "filters": {
+           "Available": true,
+           "Brand": "Powerade"
+          }
+         }
+        }
+       }
+      }
+     ]
+    ],
+    "item_type": "brand"
+   },
+   {
+    "id": "attributes-1",
+    "display_name": "Volume",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "500 ml"
+      }
+     ]
+    ],
+    "item_type": "volume"
+   },
+   {
+    "id": "attributes-2",
+    "display_name": "Warranty",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "Non-Returnable"
+      }
+     ]
+    ],
+    "item_type": "warranty"
+   },
+   {
+    "id": "attributes-3",
+    "display_name": "Pack Type",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "24 Pack"
+      }
+     ]
+    ],
+    "item_type": "pack_type"
+   },
+   {
+    "id": "attributes-4",
+    "display_name": "Flavour Type",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "Blueberry"
+      }
+     ]
+    ],
+    "item_type": "flavour_type"
+   },
+   {
+    "id": "attributes-5",
+    "display_name": "Target Customer",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "Value"
+      }
+     ]
+    ],
+    "item_type": "target_customer"
+   },
+   {
+    "id": "attributes-6",
+    "display_name": "What's in the box",
+    "source": "product-line-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "x 24 500ml Powerade Mountainblast"
+      }
+     ]
+    ],
+    "item_type": "whats_in_the_box"
+   },
+   {
+    "id": "attributes-7",
+    "display_name": "Merchandising Tags",
+    "source": "product-line-attribute-service",
+    "content_type": "application/vnd.takealot.product-information-hyperlink",
+    "displayable_text": [
+     [
+      {
+       "display_value": "ALOT For Less",
+       "link_data": {
+        "action": "search",
+        "context": "navigation",
+        "parameters": {
+         "search": {
+          "filters": {
+           "Available": true,
+           "MerchandisingTags": "ALOT For Less"
+          }
+         }
+        }
+       }
+      }
+     ]
+    ],
+    "item_type": "merchandising_tags"
+   },
+   {
+    "id": "attributes-8",
+    "display_name": "Basic Colours",
+    "source": "tsin-attribute-service",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "Transparent"
+      }
+     ]
+    ],
+    "item_type": "basic_colors"
+   },
+   {
+    "id": "attributes-9",
+    "display_name": "Barcode",
+    "source": "tsin-barcodes",
+    "content_type": "text/plain",
+    "displayable_text": [
+     [
+      {
+       "display_value": "5449000061713"
+      }
+     ]
+    ],
+    "item_type": "barcode"
+   }
+  ],
+  "tab_title": "Product Information"
+ },
+ "description": {
+  "tab_title": "Description",
+  "html": "<p>Powerade - Mountainblast - 24 x 500ml<br>When doing sports, your body loses minerals contained in sweat. POWERADE ION4 is a sports drink that helps replenish fluids and 4 of the minerals lost in sweat; sodium, potassium, calcium and magnesium</p><p>Features:<br>- POWERADE is a great-tasting sports drink helping you to refuel and rehydrate</p><p>Specifications:<br>- Size: 500ml<br>- Material: Plastic<br>- Country of Origin: South Africa<br>- Packaged Dimensions: 39 x 26 x 24cm<br>- Weight: 13.15kg<br>- Warranty: Non-Returnable</p><p>What's in the box<br />\nx 24 500ml Powerade Mountainblast</p>\n"
+ },
+ "bullet_point_attributes": {
+  "items": [
+   {
+    "description": "https://api.takealot.com/rest/v-1-18-0/product-details/messages/MD_ELIGIBLE_FOR_CASH_ON_DELIVERY?platform=android",
+    "positive": true,
+    "text": "Eligible for Cash on Delivery.",
+    "info_mode": "long",
+    "type": "eligible_for_cod",
+    "id": "bullet-point-0"
+   },
+   {
+    "description": "No warranty at all, except for delivery damages (if applicable).",
+    "positive": true,
+    "text": "Non-Returnable.",
+    "info_mode": "short",
+    "type": "warranty",
+    "id": "bullet-point-1"
+   }
+  ]
+ },
+ "reviews": {
+  "count": 58,
+  "href": "https://api.takealot.com/rest/v-1-18-0/product-reviews/plid/52580339",
+  "tab_title": "Reviews (58)",
+  "link_data": {
+   "path": "/rest/{api_version}/product-reviews/plid/{plid}",
+   "fields": {
+    "api_version": "v-1-18-0",
+    "plid": "52580339"
+   }
+  },
+  "star_rating": 4.9,
+  "distribution": {
+   "num_1_star_ratings": 0,
+   "num_2_star_ratings": 0,
+   "num_3_star_ratings": 1,
+   "num_4_star_ratings": 6,
+   "num_5_star_ratings": 51
+  }
+ },
+ "meta": {
+  "identifier": "PLID52580339",
+  "href": "https://api.takealot.com/rest/v-1-18-0/product-details/PLID52580339?platform=android",
+  "link_data": {
+   "path": "/rest/{api_version}/product-details/{plid}?platform={platform}",
+   "fields": {
+    "api_version": "v-1-18-0",
+    "plid": "PLID52580339",
+    "platform": "android"
+   }
+  },
+  "date_retrieved": "2026-09-26T23:12:36.482609",
+  "display": true,
+  "type": "ProductDetails"
+ },
+ "pdp_ad_slots": {
+  "ad_slots": [
+   {
+    "targeting": {
+     "category": [
+      "25183",
+      "25184"
+     ],
+     "brand": "powerade",
+     "environment": "production",
+     "platform": "android",
+     "plid": "52580339",
+     "type": [
+      "35"
+     ],
+     "price": "Under 1000"
+    },
+    "id": null,
+    "supported_sizes": [
+     [
+      300,
+      50
+     ]
+    ],
+    "type": "GoogleAdSlot",
+    "div_id": "div-gpt-ad-77761088187740617274743786602983187132",
+    "ad_unit": "/21681910165/pdp/pdp_300x50"
+   },
+   {
+    "targeting": {
+     "category": [
+      "25183",
+      "25184"
+     ],
+     "brand": "powerade",
+     "environment": "production",
+     "platform": "android",
+     "plid": "52580339",
+     "type": [
+      "35"
+     ],
+     "price": "Under 1000"
+    },
+    "id": null,
+    "supported_sizes": [
+     [
+      300,
+      250
+     ]
+    ],
+    "type": "GoogleAdSlot",
+    "div_id": "div-gpt-ad-184628184968697979813757467350663475253",
+    "ad_unit": "/21681910165/pdp/pdp_300x250"
+   }
+  ]
+ },
+ "sharing": {
+  "url": "https://www.takealot.com/powerade-mountainblast-24-x-500ml/PLID52580339",
+  "enabled": [],
+  "copy": "Powerade - Mountainblast - 24 x 500ml available to buy online at @TAKEALOT We offer fast, reliable delivery to your door."
+ },
+ "event_data": {
+  "documents": {
+   "product": {
+    "product_line_id": 52580339,
+    "in_stock": true,
+    "market_place_listing": false,
+    "sku_id": 82448522,
+    "purchase_price": 359,
+    "original_price": 359,
+    "lead_time": "In stock - shipped from CPT OR DBN"
+   }
+  }
+ },
+ "enhanced_ecommerce_detail": {
+  "ecommerce": {
+   "detail": {
+    "products": [
+     {
+      "id": "PLID52580339",
+      "name": "REDACTED",
+      "category": "Liquor/Non-Alcoholic/Soft Drinks",
+      "price": 359,
+      "quantity": 1,
+      "position": 0,
+      "brand": "Powerade",
+      "variant": null,
+      "dimension1": null,
+      "dimension2": 82448522
+     }
+    ],
+    "actionField": {
+     "list": "product"
+    }
+   }
+  },
+  "event": "eec.detail"
+ },
+ "enhanced_ecommerce_add_to_cart": {
+  "ecommerce": {
+   "add": {
+    "products": [
+     {
+      "id": "PLID52580339",
+      "name": "REDACTED",
+      "category": "Liquor/Non-Alcoholic/Soft Drinks",
+      "price": 359,
+      "quantity": 1,
+      "position": 0,
+      "brand": "Powerade",
+      "variant": null,
+      "dimension1": null,
+      "dimension2": 82448522
+     }
+    ]
+   },
+   "currencyCode": "ZAR"
+  },
+  "event": "addToCart"
+ },
+ "report_product": {
+  "copy": "Report this product",
+  "sku": 82448522
+ },
+ "takealotnow_info": {
+  "call_out": "Get it Now!",
+  "call_to_action": {
+   "text": "Get It in 60 Mins",
+   "link": "https://www.mrd.com/delivery/stores/1798/Takealot/products/sku/55525324/powerade-mountainblast-24-x-500ml?utm_source=takealot&utm_campaign=takealot_pdp_android"
+  },
+  "text": {
+   "description": "This product is eligible for Takealot Now - get it delivered in minutes in PTA, JHB & CPT 08h00 to 19h30. Prices may vary.",
+   "values": []
+  },
+  "images": [
+   {
+    "source": "https://static.takealot.com/images/takealotnow/takealot-now.png",
+    "alt_text": "Takealot Now Logo"
+   },
+   {
+    "source": "https://static.takealot.com/images/mr-d-blue-logo.png",
+    "alt_text": "Mister D Logo"
+   }
+  ],
+  "is_active": false,
+  "terms_and_conditions": {
+   "title": "Want it in 60 minutes?",
+   "description": {
+    "description": "Apologies, this feature is not available right now.\n\nPlease try again during the operating hours of 08h00 - 19h30.",
+    "values": []
+   },
+   "buttons": [
+    {
+     "button_id": "confirm",
+     "button_type": "button",
+     "title": "Got It, Thanks"
+    }
+   ],
+   "type": "out_of_hours_no_location"
+  }
+ }
+}

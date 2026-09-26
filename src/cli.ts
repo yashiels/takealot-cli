@@ -20,6 +20,8 @@ import { cartShow, cartAdd, cartAddBasket, cartClear, cartSetQty, cartRemove } f
 import { checkoutCommand } from './commands/checkout.js';
 import { cardsCommand, cardsRemove } from './commands/cards.js';
 import { infoCommand } from './commands/info.js';
+import { reviewsCommand } from './commands/reviews.js';
+import { recommendCommand, recommendLayout } from './commands/recommend.js';
 import { ordersList, ordersShow } from './commands/orders.js';
 import { preferencesRefresh, preferencesShow } from './commands/preferences.js';
 import { configShow } from './commands/config.js';
@@ -109,6 +111,7 @@ withGlobals(program)
 // ---- search ----
 withGlobals(program.command('search'))
   .description('search the Takealot catalogue (no login required)')
+  .allowExcessArguments(false)
   .argument('<query>', 'what to search for')
   .option('--limit <n>', 'max results to show', (v) => {
     const n = parseInt(v, 10);
@@ -122,6 +125,7 @@ withGlobals(program.command('search'))
 // ---- cart ----
 const cart = withGlobals(program.command('cart'))
   .description('view and modify your cart')
+  .allowExcessArguments(false)
   .action((_options: unknown, command: Command) => run(command, (ctx) => cartShow(ctx)));
 
 const confirmOpts = (cmd: Command): Command =>
@@ -139,6 +143,7 @@ confirmOpts(withGlobals(cart.command('add')))
 
 confirmOpts(withGlobals(cart.command('set-qty')))
   .description('update a cart line quantity (by buyable SKU id)')
+  .allowExcessArguments(false)
   .argument('<sku>', 'buyable SKU id', intOpt('<sku>'))
   .argument('<qty>', 'new quantity', intOpt('<qty>'))
   .action((sku: number, qty: number, options: any, command: Command) =>
@@ -147,11 +152,13 @@ confirmOpts(withGlobals(cart.command('set-qty')))
 
 confirmOpts(withGlobals(cart.command('remove')))
   .description('remove one cart line (by buyable SKU id)')
+  .allowExcessArguments(false)
   .argument('<sku>', 'buyable SKU id', intOpt('<sku>'))
   .action((sku: number, options: any, command: Command) => run(command, (ctx) => cartRemove(ctx, sku, options)));
 
 confirmOpts(withGlobals(cart.command('basket')))
   .description('add several items at once (comma/semicolon/newline separated)')
+  .allowExcessArguments(false)
   .argument('<items>', 'e.g. "3 pencils, 2 pens, notebook"')
   .action((items: string, options: any, command: Command) =>
     run(command, (ctx) => cartAddBasket(ctx, items, options)),
@@ -159,11 +166,13 @@ confirmOpts(withGlobals(cart.command('basket')))
 
 confirmOpts(withGlobals(cart.command('clear')))
   .description('remove everything from the cart')
+  .allowExcessArguments(false)
   .action((options: any, command: Command) => run(command, (ctx) => cartClear(ctx, options)));
 
 // ---- info (product detail) ----
 withGlobals(program.command('info'))
   .description('product detail for a PLID (price, stock, sku, rating)')
+  .allowExcessArguments(false)
   .argument('<plid>', 'product PLID', intOpt('<plid>'))
   .option('--credit-options', 'show instalment/credit options')
   .option('--bundle <ids>', 'show bundle deals for the given bundle ids')
@@ -174,9 +183,38 @@ withGlobals(program.command('info'))
     run(command, (ctx) => infoCommand(ctx, plid, options)),
   );
 
+withGlobals(program.command('reviews'))
+  .description('public product reviews for a PLID')
+  .allowExcessArguments(false)
+  .argument('<plid>', 'product PLID', intOpt('<plid>'))
+  .option('--page <n>', 'review page', intOpt('--page'), 1)
+  .option('--sort <key>', 'review sort key')
+  .action((plid: number, options: { page: number; sort?: string }, command: Command) =>
+    run(command, (ctx) => reviewsCommand(ctx, plid, options)),
+  );
+
+const recommend = withGlobals(program.command('recommend'))
+  .description('product recommendations')
+  .allowExcessArguments(false)
+  .argument('[location]', 'recommendation location', 'home-page')
+  .option('--model <key>', 'recommendation model key')
+  .option('--limit <n>', 'max products to show', intOpt('--limit'), 10)
+  .action((location: string, options: { model?: string; limit: number }, command: Command) =>
+    run(command, (ctx) => recommendCommand(ctx, location, options)),
+  );
+
+withGlobals(recommend.command('layout'))
+  .description('list recommendation model keys')
+  .allowExcessArguments(false)
+  .option('--location <location>', 'recommendation location', 'home-page')
+  .action((options: { location: string }, command: Command) =>
+    run(command, (ctx) => recommendLayout(ctx, options.location)),
+  );
+
 // ---- checkout ----
 const checkout = withGlobals(program.command('checkout'))
   .description('preview checkout; orders are placed in the Takealot app')
+  .allowExcessArguments(false)
   .option('--confirm', 'refused: orders are placed in the Takealot app')
   .action((options: { confirm?: boolean }, command: Command) =>
     run(command, (ctx) => checkoutCommand(ctx, { confirm: Boolean(options.confirm) })),
@@ -184,6 +222,7 @@ const checkout = withGlobals(program.command('checkout'))
 
 confirmOpts(withGlobals(checkout.command('start')))
   .description('start or refresh checkout state')
+  .allowExcessArguments(false)
   .option('--file <path>', 'JSON payload (or - for stdin)')
   .action((options: any, command: Command) =>
     run(command, (ctx) =>
@@ -193,6 +232,7 @@ confirmOpts(withGlobals(checkout.command('start')))
 
 confirmOpts(withGlobals(checkout.command('submit')))
   .description('submit checkout delivery or pickup selections')
+  .allowExcessArguments(false)
   .requiredOption('--file <path>', 'completed JSON payload (or - for stdin)')
   .action((options: any, command: Command) =>
     run(command, (ctx) =>
@@ -202,11 +242,13 @@ confirmOpts(withGlobals(checkout.command('submit')))
 
 const cards = withGlobals(program.command('cards'))
   .description('list saved cards without exposing card references')
+  .allowExcessArguments(false)
   .option('--unsafe-raw', 'accepted but card secrets remain hidden')
   .action((_options: unknown, command: Command) => run(command, (ctx) => cardsCommand(ctx)));
 
 confirmOpts(withGlobals(cards.command('rm')))
   .description('remove a saved card by its last four digits')
+  .allowExcessArguments(false)
   .requiredOption('--last4 <digits>', 'last four card digits')
   .action((options: any, command: Command) =>
     run(command, (ctx) => cardsRemove(ctx, String(options.last4), options)),
@@ -215,28 +257,34 @@ confirmOpts(withGlobals(cards.command('rm')))
 // ---- preferences ----
 const preferences = withGlobals(program.command('preferences'))
   .description('manage the order-history preference cache')
+  .allowExcessArguments(false)
   .action((_options: unknown, command: Command) => run(command, (ctx) => preferencesShow(ctx)));
 
 withGlobals(preferences.command('refresh'))
   .description('rebuild the preference cache from order history')
+  .allowExcessArguments(false)
   .action((_options: unknown, command: Command) => run(command, (ctx) => preferencesRefresh(ctx)));
 
 withGlobals(preferences.command('show'))
   .description('list the products currently in the preference cache')
+  .allowExcessArguments(false)
   .action((_options: unknown, command: Command) => run(command, (ctx) => preferencesShow(ctx)));
 
 // ---- config ----
 const config = withGlobals(program.command('config'))
   .description('show configuration and credential status')
+  .allowExcessArguments(false)
   .action((_options: unknown, command: Command) => run(command, (ctx) => configShow(ctx)));
 
 withGlobals(config.command('show'))
   .description('show configuration with secrets redacted')
+  .allowExcessArguments(false)
   .action((_options: unknown, command: Command) => run(command, (ctx) => configShow(ctx)));
 
 // ---- login ----
 withGlobals(program.command('login'))
   .description('log in to Takealot, rotating the cached tokens')
+  .allowExcessArguments(false)
   .option('--reset', 're-enter email/password before logging in')
   .option('--otp <code>', 'complete a 2FA challenge (prefer TAKEALOT_OTP — flags leak via ps/history)')
   .option('--challenge <nonce>', 'the challenge nonce from the otp_required output (required with --otp)')
@@ -254,6 +302,7 @@ withGlobals(program.command('login'))
 // generic passthrough; `orders track/cancel/...` are auto-wired under this group.
 const orders = withGlobals(program.command('orders'))
   .description('list recent orders')
+  .allowExcessArguments(false)
   .option('--limit <n>', 'max orders to show', intOpt('--limit'), 20)
   .action((options: { limit: number }, command: Command) =>
     run(command, (ctx) => ordersList(ctx, { limit: options.limit })),
@@ -261,6 +310,7 @@ const orders = withGlobals(program.command('orders'))
 
 withGlobals(orders.command('show'))
   .description('show full detail for one order')
+  .allowExcessArguments(false)
   .argument('<id>', 'order id')
   .action((id: string, _options: unknown, command: Command) => run(command, (ctx) => ordersShow(ctx, id)));
 
