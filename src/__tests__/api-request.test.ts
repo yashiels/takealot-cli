@@ -34,15 +34,21 @@ describe('apiRequest semantics', () => {
   });
 
   it('non-2xx → structured ApiError with a redacted body', async () => {
-    const { client } = mkClient({ status: 403, body: { message: 'no', jwt: 'secret.tok.en' } });
+    const { client } = mkClient({
+      status: 403,
+      body: { errors: [{ field: 'products', message: 'bad' }], access_token: 'secret.token.value' },
+    });
     await expect(client.apiRequest('GET', 'x')).rejects.toMatchObject({ name: 'ApiError' });
     try {
       await client.apiRequest('GET', 'x');
     } catch (e) {
       const err = e as ApiError;
-      expect(err.info.status).toBe(403);
+      expect(err.status).toBe(403);
+      expect(err.method).toBe('GET');
+      expect(err.path).toContain('/x');
       expect(err.info.code).toBe('http_403');
-      expect(JSON.stringify(err.info.body)).not.toContain('secret.tok.en');
+      expect(err.body).toMatchObject({ errors: [{ field: 'products', message: 'bad' }] });
+      expect(JSON.stringify(err.body)).not.toContain('secret.token.value');
     }
   });
 

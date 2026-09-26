@@ -6,6 +6,7 @@ import type { AuthManager } from '../lib/auth.js';
 export function fakeAuth(customerId: number | null = 12345): AuthManager {
   return {
     customerId,
+    isAuthenticated: customerId !== null,
     trackingId: 'track-1',
     currentAuthGeneration: 0,
     async ensureValid() {},

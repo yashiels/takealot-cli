@@ -140,11 +140,10 @@ export function redactUrl(value: string): string {
   return stripUrlAuthParams(value);
 }
 
-/** Strip a URL down to `protocol//host/pathname` — no query, no fragment. */
 export function safeUrlPath(value: string): string {
   try {
     const u = new URL(value);
-    return `${u.protocol}//${u.host}${u.pathname}`;
+    return u.pathname;
   } catch {
     return '«unparseable-url»';
   }
