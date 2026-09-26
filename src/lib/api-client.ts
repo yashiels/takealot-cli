@@ -254,6 +254,7 @@ export class TakealotClient {
 
   private async rawAuthedFetch(path: string, init: RequestInit): Promise<Response> {
     const url = path.startsWith('http') ? path : this.mobileApiBase + path;
+    const method = init.method ?? 'GET';
     const headers: Record<string, string> = {
       accept: 'application/json, */*',
       'content-type': 'application/json',
@@ -261,7 +262,10 @@ export class TakealotClient {
       ...this.auth.authHeaders(),
       ...((init.headers as Record<string, string>) ?? {}),
     };
-    this.logger.debug(`${init.method ?? 'GET'} ${url}`);
+    this.logger.debug(`${method} ${url} customerId=${this.auth.customerId ?? 'none'} authGeneration=${this.auth.currentAuthGeneration}`);
+    if (method === 'DELETE' && rawPathname(url).endsWith('/cart/items')) {
+      this.logger.debug(`DELETE body ${String(init.body ?? '')}`);
+    }
     return this.send(url, { ...init, headers });
   }
 
