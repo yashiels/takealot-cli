@@ -1,23 +1,11 @@
-/**
- * Catalogue-driven command registration.
- *
- * Core shopping flows (search, info, cart, checkout) are bespoke (rich typed
- * output, id resolution, delivery preview, payment recovery). Every OTHER
- * non-excluded catalogue endpoint is auto-wired here into a commander command
- * matching its `command` string, with: path params as positional args, a `--query`
- * passthrough, `--file` for write bodies, `--confirm/--yes` gating for mutations,
- * the form→submit local-binding pair, and `--unsafe-raw`. This guarantees every
- * endpoint the app exposes is reachable, with the plan's safety contracts.
- */
-
-import * as fs from 'node:fs';
 import type { Command } from 'commander';
 import { CATALOGUE, GATE_EXEMPT_MUTATIONS, type EndpointRow } from '../lib/catalogue.js';
+import { UsageError } from '../lib/errors.js';
 import type { Context } from '../lib/context.js';
-import { fetchForm, mutateEndpoint, readEndpoint, submitForm, type CommonFlags } from './generic.js';
+import { SECURITY_WRITES, fetchForm, mutateEndpoint, readBodyFromFlags, readEndpoint, submitForm, type CommonFlags } from './generic.js';
 
 /** First command words handled by bespoke modules — skipped by the auto-wirer. */
-const BESPOKE_FIRST = new Set(['search', 'info', 'cart', 'checkout', 'login']);
+const BESPOKE_FIRST = new Set(['search', 'info', 'cart', 'checkout', 'cards', 'login']);
 /** Specific endpoint ids handled bespoke (typed) — the auto-wirer leaves them alone. */
 const BESPOKE_IDS = new Set(['orders.list', 'orders.detail']);
 
@@ -28,7 +16,7 @@ interface RunFn {
 /** Collect a repeatable `--query k=v` / `--param k=v` into an object. */
 function kv(value: string, prev: Record<string, string> = {}): Record<string, string> {
   const i = value.indexOf('=');
-  if (i < 0) throw new Error(`expected key=value, got "${value}"`);
+  if (i < 0) throw new UsageError(`expected key=value, got "${value}"`);
   prev[value.slice(0, i)] = value.slice(i + 1);
   return prev;
 }
@@ -145,6 +133,7 @@ function wireGroup(
   const isForm = row.command!.endsWith(' form') || row.command === 'form';
   const isSubmit = row.command!.endsWith(' submit');
   const anyMutating = [row, ...g.variants.map((v) => v.row)].some((rr) => rr.mutating && !GATE_EXEMPT_MUTATIONS.has(rr.id));
+  const anySecurity = [row, ...g.variants.map((v) => v.row)].some((rr) => SECURITY_WRITES.has(rr.id));
 
   let cmd = withGlobals(parent.command(leafName)).description(describe(row));
   for (const p of params) cmd = cmd.argument(`<${p}>`, `${p} path parameter`);
@@ -156,6 +145,7 @@ function wireGroup(
   if (anyMutating) {
     cmd = cmd.option('--confirm', 'perform the write (default is a dry run)').option('--yes', 'skip the confirm prompt');
   }
+  if (anySecurity) cmd = cmd.option('--i-know', 'acknowledge the account-security risk');
   for (const v of g.variants) cmd = cmd.option(`--${v.flag}`, `use the ${v.flag} variant`);
 
   cmd.action((...args: unknown[]) => {
@@ -175,6 +165,7 @@ function wireGroup(
         confirm: Boolean(options.confirm),
         yes: Boolean(options.yes),
         file: options.file as string | undefined,
+        iKnow: Boolean(options.iKnow),
       };
 
       const flow = g.words.slice(0, isForm ? -1 : isSubmit ? -1 : g.words.length).join(' ');
@@ -198,12 +189,6 @@ function wireGroup(
       }
     });
   });
-}
-
-function readBodyFromFlags(flags: CommonFlags): unknown {
-  if (!flags.file) return undefined;
-  const raw = flags.file === '-' ? fs.readFileSync(0, 'utf-8') : fs.readFileSync(flags.file, 'utf-8');
-  return JSON.parse(raw);
 }
 
 function describe(row: EndpointRow): string {

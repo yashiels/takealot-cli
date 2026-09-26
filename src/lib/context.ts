@@ -5,7 +5,7 @@
  */
 
 import * as crypto from 'node:crypto';
-import { AuthManager } from './auth.js';
+import { AuthManager, authFailure } from './auth.js';
 import { DEFAULTS, TakealotClient } from './api-client.js';
 import { Logger } from './ui.js';
 import { promptPassword, promptText } from './prompt.js';
@@ -104,7 +104,7 @@ export class Context {
   /** Stable per-account hash for the acting account (form cache / pending order keys). */
   accountHash(): string {
     const email = process.env.TAKEALOT_EMAIL?.trim() || this.creds?.email;
-    if (!email) throw new Error('No account — set TAKEALOT_EMAIL or run `takealot login`.');
+    if (!email) throw authFailure('No account — set TAKEALOT_EMAIL or run `takealot login`.');
     return emailHash(email);
   }
 
@@ -172,7 +172,7 @@ export class Context {
     if (this.creds?.email && this.creds.password) return this.creds;
 
     if (this.logger.isJson || !process.stdin.isTTY) {
-      throw new Error(
+      throw authFailure(
         'No saved credentials. Set TAKEALOT_EMAIL + TAKEALOT_PASSWORD, or run `takealot login` in an interactive terminal first.',
       );
     }
@@ -180,7 +180,7 @@ export class Context {
     this.logger.info('No saved Takealot credentials found — let\'s set them up.');
     const email = await promptText('Takealot email: ');
     const password = await promptPassword('Takealot password: ');
-    if (!email || !password) throw new Error('Email and password are required.');
+    if (!email || !password) throw authFailure('Email and password are required.');
     this.setCredentials(email, password);
     return this.creds!;
   }

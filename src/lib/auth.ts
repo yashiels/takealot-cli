@@ -13,6 +13,14 @@
 
 import type { Credentials, DeviceRecord, TokenSet } from '../types.js';
 
+export function authFailure(message: string): Error & { code: 'auth_error' } {
+  return Object.assign(new Error(message), { name: 'AuthError', code: 'auth_error' as const });
+}
+
+export function isAuthFailure(error: unknown): error is Error & { code: 'auth_error' } {
+  return error instanceof Error && (error as Error & { code?: string }).code === 'auth_error';
+}
+
 /** Refresh the jwt this many ms before its stated expiry. */
 const REFRESH_SKEW_MS = 60_000;
 /** Default jwt lifetime when the server doesn't tell us (max_age: 3600). */
@@ -89,7 +97,7 @@ function parseAuthInfo(data: unknown): TokenSet {
 
   if (!jwt || customerId === undefined || customerId === null) {
     const msg = root.message ?? info.message ?? 'invalid credentials or unexpected response';
-    throw new Error(`Authentication failed: ${msg}`);
+    throw authFailure(`Authentication failed: ${msg}`);
   }
 
   const ttlMs =
@@ -312,7 +320,7 @@ export class AuthManager {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok && !(data as any)?.auth_info) {
-      throw new Error(`Login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`);
+      throw authFailure(`Login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`);
     }
     this.captureDid(res, data);
     return this.setTokens(parseAuthInfo(data));
@@ -351,7 +359,7 @@ export class AuthManager {
     const twoStepVerification = (data as any)?.two_step_verification as string | undefined;
     if (twoStepVerification !== 'enabled_untrusted') {
       if (!res.ok && !(data as any)?.auth_info) {
-        throw new Error(
+        throw authFailure(
           `Login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`,
         );
       }
@@ -368,13 +376,13 @@ export class AuthManager {
       const until = otpStatus.cooldown_end_timestamp
         ? ` Try again after ${otpStatus.cooldown_end_timestamp}.`
         : '';
-      throw new Error(
+      throw authFailure(
         `Two-step verification is in cooldown — too many OTP attempts and no new code was sent.${until}`,
       );
     }
 
     if (!cfBmCookie) {
-      throw new Error(
+      throw authFailure(
         'Two-step verification started, but the required __cf_bm cookie was not returned.',
       );
     }
@@ -406,7 +414,7 @@ export class AuthManager {
     challenge: OtpChallenge,
   ): Promise<TokenSet> {
     if (!otp || !/^\d+$/.test(otp)) {
-      throw new Error('Invalid OTP: must be numeric digits only');
+      throw authFailure('Invalid OTP: must be numeric digits only');
     }
     // Ensure the challenge's did is what we present (this process may hold none).
     if (challenge.did) this.capturedDid = challenge.did;
@@ -428,7 +436,7 @@ export class AuthManager {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok && !(data as any)?.auth_info) {
-      throw new Error(
+      throw authFailure(
         `OTP login failed (HTTP ${res.status}): ${(data as any)?.message ?? res.statusText}`,
       );
     }
@@ -455,7 +463,7 @@ export class AuthManager {
 
   /** Pure network refresh using the given base tokens; does not persist or adopt. */
   private async refreshNetwork(base: TokenSet): Promise<{ tokens: TokenSet; did?: string }> {
-    if (!base.refreshToken) throw new Error('No refresh token available');
+    if (!base.refreshToken) throw authFailure('No refresh token available');
     this.opts.log('auth: refresh');
 
     const res = await fetch(`${this.opts.apiBase}/customers/auth/refresh`, {
@@ -476,7 +484,7 @@ export class AuthManager {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok && !(data as any)?.auth_info) {
-      throw new Error(`Token refresh failed (HTTP ${res.status})`);
+      throw authFailure(`Token refresh failed (HTTP ${res.status})`);
     }
     const did = this.captureDid(res, data);
     const tokens = parseAuthInfo(data);
@@ -488,7 +496,7 @@ export class AuthManager {
 
   async refresh(): Promise<TokenSet> {
     const t = this.tokens;
-    if (!t?.refreshToken) throw new Error('No refresh token available');
+    if (!t?.refreshToken) throw authFailure('No refresh token available');
     const { tokens } = await this.refreshNetwork(t);
     return this.setTokens(tokens);
   }
@@ -524,7 +532,7 @@ export class AuthManager {
       }
       // Refresh from the freshest refresh token on disk (it may have rotated).
       const base = snapTokens ?? this.tokens ?? undefined;
-      if (!base?.refreshToken) throw new Error('No refresh token available');
+      if (!base?.refreshToken) throw authFailure('No refresh token available');
       const { tokens: newTokens, did } = await this.refreshNetwork(base);
       // Persist a rotated did into the device record in the SAME atomic write.
       const patch: Partial<Credentials> = { tokens: newTokens };
@@ -579,7 +587,7 @@ export class AuthManager {
   private async doEnsureValid(): Promise<void> {
     if (!this.tokens) {
       const creds = this.opts.getCredentials();
-      if (!creds) throw new Error('Not authenticated. Run `takealot login` first.');
+      if (!creds) throw authFailure('Not authenticated. Run `takealot login` first.');
       await this.doLogin(creds);
       return;
     }

@@ -12,9 +12,10 @@
  * and surfaced for display via `prettyPrice`.
  */
 
-import type { AuthManager } from './auth.js';
+import { authFailure, type AuthManager } from './auth.js';
 import { findPreferredProduct, type PreferenceMatch } from './preferences.js';
-import { endpoint, type Base, type EndpointRow, type Encoding, type HttpMethod } from './catalogue.js';
+import { CATALOGUE, PAYMENT_BLOCKED, endpoint, type Base, type EndpointRow, type Encoding, type HttpMethod } from './catalogue.js';
+import { PaymentBlockedError, UnsafeUrlError, UsageError } from './errors.js';
 import { redact, redactText, safeUrlPath } from './redact.js';
 import type {
   AddToCartResult,
@@ -48,26 +49,27 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Hosts an absolute (`@Url`) request may target. This is a **compile-time
- * constant**, never user-configurable — a runtime-overridable allowlist would
- * let a poisoned `addresses/config` response (or config) self-authorize an
- * arbitrary host, defeating the SSRF containment.
- */
-const ABSOLUTE_ALLOWLIST = ['takealot.com'] as const;
-
 const sleep = (ms: number): Promise<void> => new Promise((res) => setTimeout(res, ms));
 
-function hostAllowed(urlStr: string, allow: readonly string[]): boolean {
-  let u: URL;
-  try {
-    u = new URL(urlStr);
-  } catch {
-    return false;
-  }
-  if (u.protocol !== 'https:') return false;
-  const host = u.hostname.toLowerCase();
-  return allow.some((a) => host === a || host.endsWith('.' + a));
+const regexEscape = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const PAYMENT_PATHS = [
+  ...new Set(CATALOGUE.filter((row) => PAYMENT_BLOCKED.has(row.id)).map((row) => row.path)),
+].map(
+  (path) =>
+    new RegExp(
+      `^/${path
+        .split('/')
+        .map((segment) => (/^\{\w+\}$/.test(segment) ? '[^/]+' : regexEscape(segment)))
+        .join('/')}$`,
+    ),
+);
+
+function rawPathname(url: string): string {
+  const authority = url.indexOf('://');
+  const start = authority < 0 ? 0 : url.indexOf('/', authority + 3);
+  if (start < 0) return '/';
+  const end = url.slice(start).search(/[?#]/);
+  return end < 0 ? url.slice(start) : url.slice(start, start + end);
 }
 
 export interface ApiRequestOpts {
@@ -215,7 +217,7 @@ export class TakealotClient {
       ...((init.headers as Record<string, string>) ?? {}),
     };
     this.logger.debug(`${init.method ?? 'GET'} ${url}`);
-    return fetch(url, { ...init, headers });
+    return this.send(url, { ...init, headers });
   }
 
   /** authedFetch + JSON parse, throwing a useful error on non-2xx. */
@@ -237,7 +239,7 @@ export class TakealotClient {
 
   private requireCustomerId(): number {
     const id = this.auth.customerId;
-    if (id === null) throw new Error('Not authenticated. Run `takealot login` first.');
+    if (id === null) throw authFailure('Not authenticated. Run `takealot login` first.');
     return id;
   }
 
@@ -342,43 +344,54 @@ export class TakealotClient {
       ...((init.headers as Record<string, string>) ?? {}),
     };
     this.logger.debug(`${init.method ?? 'GET'} ${url}`);
-    return fetch(url, { ...init, headers });
+    return this.send(url, { ...init, headers });
   }
 
-  /** Contained absolute-URL fetch (address validation): static allowlist, HTTPS,
-   *  no auth/device headers, manual redirect re-validated per hop. */
   private async absoluteFetch(url: string, init: RequestInit): Promise<Response> {
-    let current = url;
-    for (let hop = 0; hop < 5; hop++) {
-      if (!hostAllowed(current, ABSOLUTE_ALLOWLIST)) {
-        // Drop the query/fragment before reporting — a blocked URL may carry
-        // tokens we must not leak into the error message/path.
-        const safe = safeUrlPath(current);
-        throw new ApiError({
-          status: 0,
-          code: 'blocked_url',
-          message: `refusing absolute URL (host not on the static allowlist): ${safe}`,
-          path: safe,
-        });
-      }
-      const res = await fetch(current, {
-        ...init,
-        redirect: 'manual',
-        headers: {
-          accept: 'application/json, */*',
-          'user-agent': this.mobileUA,
-          ...((init.headers as Record<string, string>) ?? {}),
-        },
-      });
-      if (res.status >= 300 && res.status < 400) {
-        const loc = res.headers.get('location');
-        if (!loc) return res;
-        current = new URL(loc, current).toString();
-        continue; // re-validate the next hop at the top of the loop
-      }
-      return res;
+    return this.send(url, {
+      ...init,
+      headers: {
+        accept: 'application/json, */*',
+        'user-agent': this.mobileUA,
+        ...((init.headers as Record<string, string>) ?? {}),
+      },
+    });
+  }
+
+  private async send(urlString: string, init: RequestInit): Promise<Response> {
+    let url: URL;
+    try {
+      url = new URL(urlString);
+    } catch {
+      throw new UnsafeUrlError('invalid Takealot API URL');
     }
-    throw new ApiError({ status: 0, code: 'too_many_redirects', message: 'too many redirects', path: safeUrlPath(url) });
+    if (url.username || url.password) throw new UnsafeUrlError('Takealot API URL must not contain user information');
+    if (url.origin !== 'https://api.takealot.com') throw new UnsafeUrlError('Takealot API URL must use https://api.takealot.com');
+
+    let pathname = rawPathname(urlString);
+    for (let pass = 0; pass < 3; pass++) {
+      let decoded: string;
+      try {
+        decoded = decodeURIComponent(pathname);
+      } catch (error) {
+        if (error instanceof URIError) throw new UnsafeUrlError('Takealot API URL contains malformed encoding');
+        throw error;
+      }
+      if (decoded === pathname) break;
+      pathname = decoded;
+    }
+    if (/[\\%\u0000-\u001f\u007f]/.test(pathname)) throw new UnsafeUrlError('Takealot API URL contains unsafe path characters');
+    if (pathname.split('/').some((segment) => segment === '.' || segment === '..')) {
+      throw new UnsafeUrlError('Takealot API URL contains unsafe path segments');
+    }
+    pathname = pathname.replace(/\/+/g, '/').replace(/^\/rest\/v-\d+-\d+-\d+\//, '/').replace(/\/$/, '') || '/';
+    const method = (init.method ?? 'GET').toUpperCase();
+    if (PAYMENT_PATHS.some((pattern) => pattern.test(pathname))) {
+      throw new PaymentBlockedError();
+    }
+    const response = await fetch(url, { ...init, method, redirect: 'manual' });
+    if (response.status >= 300 && response.status < 400) throw new UnsafeUrlError('Takealot API redirects are blocked');
+    return response;
   }
 
   /**
@@ -417,7 +430,7 @@ export class TakealotClient {
         }
         return await this.parseResponse(res, url);
       } catch (e) {
-        if (e instanceof ApiError) throw e;
+        if (e instanceof UsageError || e instanceof ApiError) throw e;
         const aborted = (e as any)?.name === 'AbortError';
         if (!aborted && attempt < maxAttempts) {
           await sleep(150 * attempt);
@@ -454,6 +467,7 @@ export class TakealotClient {
     args: { params?: Record<string, string | number>; query?: Record<string, unknown>; body?: unknown } = {},
   ): Promise<unknown> {
     const row = endpoint(id);
+    if (PAYMENT_BLOCKED.has(id)) throw new PaymentBlockedError();
     if (row.excluded) throw new Error(`endpoint ${id} is excluded: ${row.reason}`);
     // Bootstrap a session first so an authed endpoint whose path needs
     // {customerId} self-heals from a full token wipe (login via trusted device).
@@ -507,7 +521,7 @@ export class TakealotClient {
     const url = `${this.searchApiBase}/searches/products,filters,facets,sort_options,breadcrumbs,slots_audience,context,seo,layout?${params.toString()}`;
 
     this.logger.debug(`GET ${url}`);
-    const res = await fetch(url, {
+    const res = await this.send(url, {
       headers: {
         accept: 'application/json, */*',
         'content-type': 'application/json',

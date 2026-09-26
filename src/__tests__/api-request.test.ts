@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from '../lib/api-client.js';
+import { UnsafeUrlError } from '../lib/errors.js';
 import { mkClient } from './mkclient.js';
 
 describe('apiRequest semantics', () => {
@@ -106,7 +107,7 @@ describe('apiRequest semantics', () => {
     expect(m).toBe(1);
   });
 
-  it('absolute-url refuses a host not on the static allowlist and REDACTS the url in the error', async () => {
+  it('absolute-url refuses a non-API origin without leaking its query', async () => {
     const { client } = mkClient({ body: {} });
     try {
       await client.apiRequest('POST', 'https://evil.example/x?access_token=SEKRIT&token=ALSO', {
@@ -116,17 +117,14 @@ describe('apiRequest semantics', () => {
       });
       throw new Error('should have thrown');
     } catch (e) {
-      const err = e as ApiError;
-      expect(err.info.code).toBe('blocked_url');
-      // The query (and any tokens in it) must NOT leak into message or path.
-      expect(err.info.message).not.toContain('SEKRIT');
-      expect(err.info.message).not.toContain('ALSO');
-      expect(err.info.path).not.toContain('SEKRIT');
-      expect(err.info.path).not.toContain('?');
+      const err = e as UnsafeUrlError;
+      expect(err).toBeInstanceOf(UnsafeUrlError);
+      expect(err.message).not.toContain('SEKRIT');
+      expect(err.message).not.toContain('ALSO');
     }
   });
 
-  it('(#3) too_many_redirects error redacts the url (no query token in path)', async () => {
+  it('rejects an API redirect without following it or leaking its location', async () => {
     const { client } = mkClient({ body: {} });
     // Always 302 to another allowlisted URL carrying a token → exhausts the hop cap.
     globalThis.fetch = vi.fn(async () => ({
@@ -145,10 +143,9 @@ describe('apiRequest semantics', () => {
       });
       throw new Error('should have thrown');
     } catch (e) {
-      const err = e as ApiError;
-      expect(err.info.code).toBe('too_many_redirects');
-      expect(err.info.path).not.toContain('SEKRIT');
-      expect(err.info.path).not.toContain('?');
+      const err = e as UnsafeUrlError;
+      expect(err).toBeInstanceOf(UnsafeUrlError);
+      expect(err.message).not.toContain('SEKRIT');
     }
   });
 

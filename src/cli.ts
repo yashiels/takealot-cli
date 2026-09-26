@@ -7,18 +7,25 @@
  * them on each command and OR-ing the values up the ancestor chain.
  */
 
-import { Command } from 'commander';
-import { Context, type GlobalOptions } from './lib/context.js';
+import { Command, CommanderError } from 'commander';
+import { realpathSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { Context, OtpFlowError, type GlobalOptions } from './lib/context.js';
+import { ApiError } from './lib/api-client.js';
+import { isAuthFailure } from './lib/auth.js';
+import { UsageError } from './lib/errors.js';
 import { c } from './lib/ui.js';
 import { searchCommand } from './commands/search.js';
 import { cartShow, cartAdd, cartAddBasket, cartClear, cartSetQty, cartRemove } from './commands/cart.js';
-import { checkoutCommand, checkoutResume, checkoutReset } from './commands/checkout.js';
+import { checkoutCommand } from './commands/checkout.js';
+import { cardsCommand, cardsRemove } from './commands/cards.js';
 import { infoCommand } from './commands/info.js';
 import { ordersList, ordersShow } from './commands/orders.js';
 import { preferencesRefresh, preferencesShow } from './commands/preferences.js';
 import { configShow } from './commands/config.js';
 import { loginCommand } from './commands/login.js';
 import { registerCatalogue } from './commands/register.js';
+import { mutateEndpoint, readBodyFromFlags } from './commands/generic.js';
 
 declare const __TAKEALOT_VERSION__: string | undefined;
 const VERSION =
@@ -26,7 +33,7 @@ const VERSION =
 
 const intOpt = (name: string) => (v: string) => {
   const n = parseInt(v, 10);
-  if (Number.isNaN(n)) throw new Error(`invalid ${name}: ${v}`);
+  if (Number.isNaN(n)) throw new UsageError(`invalid ${name}: ${v}`);
   return n;
 };
 
@@ -50,30 +57,52 @@ function globalFlags(command: Command): GlobalOptions {
 }
 
 /** Build a Context for the invocation and run the handler with unified error handling. */
-async function run(command: Command, fn: (ctx: Context) => Promise<void>): Promise<void> {
+function errorDetails(err: unknown): { error: string; code: string; status?: number } {
+  const error = err instanceof Error ? err.message : String(err);
+  if (err instanceof ApiError) return { error, code: err.info.code, status: err.info.status };
+  if (err instanceof UsageError) return { error, code: err.code };
+  if (err instanceof OtpFlowError) return { error, code: err.code };
+  if (isAuthFailure(err)) return { error, code: err.code };
+  if (err instanceof CommanderError) return { error, code: err.code };
+  return { error, code: 'runtime_error' };
+}
+
+function errorExitCode(err: unknown): number {
+  if (err instanceof UsageError || err instanceof CommanderError) return 4;
+  if (err instanceof OtpFlowError || isAuthFailure(err) || (err instanceof ApiError && err.info.status === 401)) return 3;
+  return 1;
+}
+
+export async function run(command: Command, fn: (ctx: Context) => Promise<void>): Promise<void> {
   const flags = globalFlags(command);
   const ctx = new Context(flags);
   try {
     await fn(ctx);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const details = errorDetails(err);
     if (ctx.logger.isJson) {
-      process.stdout.write(JSON.stringify({ error: message }, null, 2) + '\n');
+      process.stdout.write(JSON.stringify(details, null, 2) + '\n');
     } else {
-      ctx.logger.error(message);
+      ctx.logger.error(details.error);
       if (flags.verbose && err instanceof Error && err.stack) {
         process.stderr.write(c.gray(err.stack) + '\n');
       }
     }
-    if (!process.exitCode) process.exitCode = 1;
+    process.exitCode = errorExitCode(err);
   }
 }
 
 const program = new Command();
 
+program.exitOverride().configureOutput({
+  writeErr: (text) => {
+    if (!process.argv.includes('--json')) process.stderr.write(text);
+  },
+});
+
 withGlobals(program)
   .name('takealot')
-  .description('Command-line tool for Takealot.com — search, cart, pure-API checkout, and order history.')
+  .description('Command-line tool for Takealot.com — search, cart, checkout preview, and order history.')
   .version(VERSION, '-V, --version', 'print the version')
   .showHelpAfterError();
 
@@ -83,7 +112,7 @@ withGlobals(program.command('search'))
   .argument('<query>', 'what to search for')
   .option('--limit <n>', 'max results to show', (v) => {
     const n = parseInt(v, 10);
-    if (Number.isNaN(n) || n < 1) throw new Error(`invalid --limit: ${v}`);
+    if (Number.isNaN(n) || n < 1) throw new UsageError(`invalid --limit: ${v}`);
     return n;
   }, 10)
   .action((query: string, options: { limit: number }, command: Command) =>
@@ -147,25 +176,41 @@ withGlobals(program.command('info'))
 
 // ---- checkout ----
 const checkout = withGlobals(program.command('checkout'))
-  .description('check out the current cart (dry run unless --confirm)')
-  .option('--confirm', 'actually place the order and pay')
-  .option('--yes', 'skip the interactive confirmation prompt')
-  .action((options: { confirm?: boolean; yes?: boolean }, command: Command) =>
-    run(command, (ctx) => checkoutCommand(ctx, { confirm: Boolean(options.confirm), yes: Boolean(options.yes) })),
+  .description('preview checkout; orders are placed in the Takealot app')
+  .option('--confirm', 'refused: orders are placed in the Takealot app')
+  .action((options: { confirm?: boolean }, command: Command) =>
+    run(command, (ctx) => checkoutCommand(ctx, { confirm: Boolean(options.confirm) })),
   );
 
-withGlobals(checkout.command('resume'))
-  .description('reconcile + complete/initiate a payment (dry-run unless --confirm)')
-  .argument('<orderId>', 'the order id from the action_required result')
-  .option('--confirm', 'actually reconcile and pay')
-  .option('--yes', 'skip the interactive confirmation prompt')
-  .action((orderId: string, options: { confirm?: boolean; yes?: boolean }, command: Command) =>
-    run(command, (ctx) => checkoutResume(ctx, orderId, options)),
+confirmOpts(withGlobals(checkout.command('start')))
+  .description('start or refresh checkout state')
+  .option('--file <path>', 'JSON payload (or - for stdin)')
+  .action((options: any, command: Command) =>
+    run(command, (ctx) =>
+      mutateEndpoint(ctx, 'checkout.create', { body: readBodyFromFlags(options) ?? {} }, options),
+    ),
   );
 
-withGlobals(checkout.command('reset'))
-  .description('clear a stuck pending-checkout marker (after verifying via `orders`)')
-  .action((_o: unknown, command: Command) => run(command, (ctx) => checkoutReset(ctx)));
+confirmOpts(withGlobals(checkout.command('submit')))
+  .description('submit checkout delivery or pickup selections')
+  .requiredOption('--file <path>', 'completed JSON payload (or - for stdin)')
+  .action((options: any, command: Command) =>
+    run(command, (ctx) =>
+      mutateEndpoint(ctx, 'checkout.update', { body: readBodyFromFlags(options, true) }, options),
+    ),
+  );
+
+const cards = withGlobals(program.command('cards'))
+  .description('list saved cards without exposing card references')
+  .option('--unsafe-raw', 'accepted but card secrets remain hidden')
+  .action((_options: unknown, command: Command) => run(command, (ctx) => cardsCommand(ctx)));
+
+confirmOpts(withGlobals(cards.command('rm')))
+  .description('remove a saved card by its last four digits')
+  .requiredOption('--last4 <digits>', 'last four card digits')
+  .action((options: any, command: Command) =>
+    run(command, (ctx) => cardsRemove(ctx, String(options.last4), options)),
+  );
 
 // ---- preferences ----
 const preferences = withGlobals(program.command('preferences'))
@@ -222,12 +267,23 @@ withGlobals(orders.command('show'))
 // ---- everything else: auto-wired from the endpoint catalogue ----
 registerCatalogue(program, withGlobals, run, globalFlags);
 
-if (process.argv.length <= 2) {
-  program.outputHelp();
-  process.exit(0);
+export async function main(argv = process.argv): Promise<void> {
+  if (argv.length <= 2) {
+    program.outputHelp();
+    return;
+  }
+  try {
+    await program.parseAsync(argv);
+  } catch (err) {
+    if (err instanceof CommanderError && (err.code === 'commander.helpDisplayed' || err.code === 'commander.version')) {
+      process.exitCode = 0;
+      return;
+    }
+    const details = errorDetails(err);
+    if (argv.includes('--json')) process.stdout.write(JSON.stringify(details, null, 2) + '\n');
+    else if (!(err instanceof CommanderError)) process.stderr.write(`${details.error}\n`);
+    process.exitCode = errorExitCode(err);
+  }
 }
 
-program.parseAsync(process.argv).catch((err) => {
-  process.stderr.write(`${(err as Error).message}\n`);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) void main();
