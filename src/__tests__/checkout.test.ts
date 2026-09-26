@@ -6,6 +6,7 @@ import { Command } from 'commander';
 import { PaymentBlockedError, UsageError } from '../lib/errors.js';
 import { authFailure } from '../lib/auth.js';
 import { ApiError } from '../lib/api-client.js';
+import { mkClient } from './mkclient.js';
 
 let tmp: string;
 let previous: Record<string, string | undefined>;
@@ -69,6 +70,15 @@ async function seededContext(json = true) {
 function captureStdout() {
   const chunks: string[] = [];
   const spy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: any) => {
+    chunks.push(String(chunk));
+    return true;
+  });
+  return { text: () => chunks.join(''), restore: () => spy.mockRestore() };
+}
+
+function captureStderr() {
+  const chunks: string[] = [];
+  const spy = vi.spyOn(process.stderr, 'write').mockImplementation((chunk: any) => {
     chunks.push(String(chunk));
     return true;
   });
@@ -255,7 +265,7 @@ describe('run exit contract', () => {
     ['usage', new UsageError('bad input'), 4],
     ['blocked', new PaymentBlockedError(), 4],
     ['auth', authFailure('login failed'), 3],
-    ['http 401', new ApiError({ status: 401, code: 'http_401', message: 'expired', path: '/x' }), 3],
+    ['http 401', new ApiError({ status: 401, method: 'GET', code: 'http_401', message: 'expired', path: '/x' }), 3],
     ['runtime', new Error('boom'), 1],
   ])('maps %s errors to exit %i', async (_name, error, expected) => {
     const { run } = await import('../cli.js');
@@ -269,5 +279,79 @@ describe('run exit contract', () => {
     output.restore();
     expect(process.exitCode).toBe(expected);
     expect(envelope).toMatchObject({ error: (error as Error).message });
+  });
+
+  it('prints API status, request metadata, and redacted server details under --json and --verbose', async () => {
+    const errors = Array.from({ length: 12 }, (_, index) => ({
+      field: index === 0 ? 'email' : `field-${index}`,
+      message:
+        index === 0
+          ? 'Contact shopper@example.com or 27821234567'
+          : index === 1
+            ? `${'x'.repeat(195)}27821234567 and more`
+            : 'x'.repeat(250),
+      code: 'INVALID',
+      name: 'Private Name',
+      address: { street: '12 Example Street' },
+    }));
+    const { client } = mkClient({
+      status: 400,
+      body: {
+        message: 'Oops for shopper@example.com and 27821234567',
+        code: 'VALIDATION_ERROR',
+        error: { message: 'must be dropped' },
+        errors,
+        address: { street: '12 Example Street' },
+        name: 'Private Name',
+        access_token: 'secret.token.value',
+      },
+    });
+    let apiError: unknown;
+    try {
+      await client.apiRequest('POST', 'wishlist/items', { encoding: 'json', body: {} });
+    } catch (error) {
+      apiError = error;
+    }
+    const { run } = await import('../cli.js');
+    const command = new Command().option('--json').option('--verbose');
+    command.setOptionValue('json', true);
+    command.setOptionValue('verbose', true);
+    const stdout = captureStdout();
+    const stderr = captureStderr();
+    await run(command, async () => {
+      throw apiError;
+    });
+    const envelope = JSON.parse(stdout.text());
+    const verbose = stderr.text();
+    stdout.restore();
+    stderr.restore();
+    expect(envelope).toEqual({
+      error: 'Oops for [REDACTED] and [REDACTED]',
+      code: 'http_400',
+      status: 400,
+      method: 'POST',
+      path: expect.stringContaining('/wishlist/items'),
+      details: {
+        message: 'Oops for [REDACTED] and [REDACTED]',
+        code: 'VALIDATION_ERROR',
+        errors: expect.arrayContaining([
+          {
+            field: 'email',
+            message: 'Contact [REDACTED] or [REDACTED]',
+            code: 'INVALID',
+          },
+        ]),
+      },
+    });
+    expect(envelope.details.errors).toHaveLength(10);
+    expect(envelope.details.errors[1].message).toBe(`${'x'.repeat(195)}[REDA`);
+    expect(envelope.details.errors[2].message).toHaveLength(200);
+    expect(JSON.stringify(envelope.details)).not.toContain('Private Name');
+    expect(JSON.stringify(envelope.details)).not.toContain('address');
+    expect(JSON.stringify(envelope.details)).not.toContain('secret.token.value');
+    expect(verbose).toContain('POST');
+    expect(verbose).toContain('/wishlist/items');
+    expect(verbose).toContain('400');
+    expect(process.exitCode).toBe(1);
   });
 });

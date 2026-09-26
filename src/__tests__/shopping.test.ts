@@ -33,6 +33,21 @@ describe('cart edit (typed core)', () => {
 });
 
 // ── renderRaw is total (never throws) ───────────────────────────────────────
+describe('typed cart errors', () => {
+  it('raises ApiError with the server message instead of [object Object]', async () => {
+    const { client } = mkClient({
+      status: 400,
+      body: { error: { code: 'unavailable' }, errors: [{ field: 'products', message: 'Product in cart is not available anymore.' }] },
+    });
+    const err = await client.addToCart(1).catch((e: unknown) => e);
+    const { ApiError } = await import('../lib/api-client.js');
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as InstanceType<typeof ApiError>).message).toBe('Product in cart is not available anymore.');
+    expect((err as InstanceType<typeof ApiError>).status).toBe(400);
+    expect((err as InstanceType<typeof ApiError>).method).toBe('POST');
+  });
+});
+
 describe('renderRaw', () => {
   it('summarises arbitrary shapes without throwing', () => {
     for (const v of [null, undefined, 1, 'x', [1, 2, 3], { a: 1, b: [1] }, { deep: { deeper: { x: 1 } } }]) {

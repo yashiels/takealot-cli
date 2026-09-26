@@ -14,6 +14,7 @@ import { Context, OtpFlowError, type GlobalOptions } from './lib/context.js';
 import { ApiError } from './lib/api-client.js';
 import { isAuthFailure } from './lib/auth.js';
 import { UsageError } from './lib/errors.js';
+import { redactText } from './lib/redact.js';
 import { c } from './lib/ui.js';
 import { searchCommand } from './commands/search.js';
 import { cartShow, cartAdd, cartAddBasket, cartClear, cartSetQty, cartRemove } from './commands/cart.js';
@@ -103,10 +104,58 @@ function rejectAncestorOptions(command: Command): void {
   }
 }
 
+function safeDetailString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  return redactText(value)
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[REDACTED]')
+    .replace(/\d{9,}/g, '[REDACTED]')
+    .slice(0, 200);
+}
+
+function safeErrorDetails(body: unknown): Record<string, unknown> | undefined {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return undefined;
+  const source = body as Record<string, unknown>;
+  const details: Record<string, unknown> = {};
+  for (const key of ['message', 'code', 'error']) {
+    const value = safeDetailString(source[key]);
+    if (value !== undefined) details[key] = value;
+  }
+  if (Array.isArray(source.errors)) {
+    const errors = source.errors.slice(0, 10).flatMap((value) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+      const entry: Record<string, string> = {};
+      for (const key of ['field', 'message', 'code']) {
+        const detail = safeDetailString((value as Record<string, unknown>)[key]);
+        if (detail !== undefined) entry[key] = detail;
+      }
+      return Object.keys(entry).length > 0 ? [entry] : [];
+    });
+    if (errors.length > 0) details.errors = errors;
+  }
+  return Object.keys(details).length > 0 ? details : undefined;
+}
+
 /** Build a Context for the invocation and run the handler with unified error handling. */
-function errorDetails(err: unknown): { error: string; code: string; status?: number } {
+function errorDetails(err: unknown): {
+  error: string;
+  code: string;
+  status?: number;
+  method?: string;
+  path?: string;
+  details?: unknown;
+} {
   const error = err instanceof Error ? err.message : String(err);
-  if (err instanceof ApiError) return { error, code: err.info.code, status: err.info.status };
+  if (err instanceof ApiError) {
+    const details = safeErrorDetails(err.body);
+    return {
+      error: safeDetailString(error) ?? 'API request failed',
+      code: err.info.code,
+      status: err.status,
+      method: err.method,
+      path: err.path,
+      ...(details === undefined ? {} : { details }),
+    };
+  }
   if (err instanceof UsageError) return { error, code: err.code };
   if (err instanceof OtpFlowError) return { error, code: err.code };
   if (isAuthFailure(err)) return { error, code: err.code };
@@ -128,6 +177,9 @@ export async function run(command: Command, fn: (ctx: Context) => Promise<void>)
     await fn(ctx);
   } catch (err) {
     const details = errorDetails(err);
+    if (flags.verbose && err instanceof ApiError) {
+      ctx.logger.debug(`${err.method} ${err.path} → ${err.status}`);
+    }
     if (ctx.logger.isJson) {
       process.stdout.write(JSON.stringify(details, null, 2) + '\n');
     } else {

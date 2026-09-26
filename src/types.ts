@@ -151,6 +151,7 @@ export interface ProductDetails {
   rating: number | null;
   reviewCount: number;
   variants: ProductVariant[];
+  unavailableReason: string | null;
 }
 
 export interface CartItem {

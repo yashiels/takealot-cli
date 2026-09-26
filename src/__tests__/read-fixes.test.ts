@@ -249,6 +249,7 @@ describe('product details against app 4.3.0', () => {
       rating: 4.9,
       reviewCount: 58,
       variants: [],
+      unavailableReason: null,
     });
     const { client } = mkClient({ body: productSingle });
     const stdout = captureStdout();
@@ -267,6 +268,7 @@ describe('product details against app 4.3.0', () => {
       'rating',
       'reviewCount',
       'variants',
+      'unavailableReason',
     ]);
   });
 
@@ -285,6 +287,17 @@ describe('product details against app 4.3.0', () => {
     ).toBe(true);
   });
 
+  it('keeps buybox pricing when the item has no SKU id', () => {
+    const noSku = structuredClone(productSingle);
+    delete noSku.buybox.items[0].sku;
+    delete noSku.event_data.documents.product.sku_id;
+    const parsed = parseProductDetails(noSku, 52580339);
+    expect(parsed.skuId).toBeNull();
+    expect(parsed.price).toBe(359);
+    expect(parsed.prettyPrice).toBe('R 359');
+    expect(parsed.unavailableReason).toBeNull();
+  });
+
   it('resolves a single SKU and rejects a multi-variant PLID with choices', async () => {
     const single = mkClient({ body: productSingle });
     await expect(single.client.skuForPlid(52580339)).resolves.toBe(82448522);
@@ -293,6 +306,55 @@ describe('product details against app 4.3.0', () => {
       name: 'UsageError',
       message: expect.stringContaining('PLID90255552 has variants; pick one: Colour: Apple Red'),
     } satisfies Partial<UsageError>);
+  });
+
+  it('retries a missing buybox once and returns a null price with its reason', async () => {
+    const missingBuybox = { ...productSingle, buybox: { ...productSingle.buybox, items: [] } };
+    const { client, fetchMock } = mkClient({ body: missingBuybox });
+    const stdout = captureStdout();
+    await infoCommand(context(client, true), 52580339);
+    const output = JSON.parse(stdout.output());
+    stdout.restore();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(output).toMatchObject({ skuId: null, price: null, unavailableReason: 'buybox missing' });
+
+    const human = mkClient({ body: missingBuybox });
+    const humanStdout = captureStdout();
+    await infoCommand(context(human.client), 52580339);
+    const humanOutput = humanStdout.output();
+    humanStdout.restore();
+    expect(humanOutput).toContain('price unavailable (buybox missing)');
+    expect(humanOutput).not.toContain('R—');
+    expect(humanOutput).not.toContain('sku ?');
+  });
+
+  it('uses the buybox returned by the single authenticated retry', async () => {
+    const missingBuybox = { ...productSingle, buybox: { ...productSingle.buybox, items: [] } };
+    const { client, calls, fetchMock } = mkClient({ body: productSingle });
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(missingBuybox), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    await expect(client.productDetails(52580339)).resolves.toMatchObject({
+      skuId: 82448522,
+      price: 359,
+      unavailableReason: null,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.init.headers).toMatchObject({ authorization: 'Bearer test-jwt' });
+  });
+
+  it('reports a missing buybox as a runtime error instead of a variant choice', async () => {
+    const missingBuybox = { ...productSingle, buybox: { ...productSingle.buybox, items: [] } };
+    const { client, fetchMock } = mkClient({ body: missingBuybox });
+    await expect(client.skuForPlid(52580339)).rejects.toMatchObject({
+      name: 'Error',
+      message: 'PLID52580339: price unavailable (buybox missing)',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 

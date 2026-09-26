@@ -36,6 +36,7 @@ export class ApiError extends Error {
   constructor(
     readonly info: {
       status: number;
+      method: HttpMethod;
       code: string;
       message: string;
       path: string;
@@ -45,6 +46,18 @@ export class ApiError extends Error {
   ) {
     super(info.message);
     this.name = 'ApiError';
+  }
+  get status(): number {
+    return this.info.status;
+  }
+  get method(): HttpMethod {
+    return this.info.method;
+  }
+  get path(): string {
+    return this.info.path;
+  }
+  get body(): unknown {
+    return this.info.body;
   }
   toJSON() {
     return { error: { ...this.info } };
@@ -172,14 +185,15 @@ export function parseProductDetails(data: any, plid: number): ProductDetails {
       };
     }),
   );
+  const unavailableReason = Array.isArray(buybox?.items) && buybox.items.length > 0 ? null : 'buybox missing';
 
   return {
     plid,
-    skuId,
+    skuId: unavailableReason ? null : skuId,
     title: core?.title ?? data?.title ?? null,
     brand: core?.brand ?? null,
-    price: nullableNumber(item?.price ?? eventProduct?.purchase_price),
-    prettyPrice: item?.pretty_price ?? null,
+    price: unavailableReason ? null : nullableNumber(item?.price ?? eventProduct?.purchase_price),
+    prettyPrice: unavailableReason ? null : item?.pretty_price ?? null,
     inStock: status
       ? status.includes('in stock') || status.includes('in_stock') || status.startsWith('ships in')
       : Boolean(eventProduct?.in_stock),
@@ -187,6 +201,7 @@ export function parseProductDetails(data: any, plid: number): ProductDetails {
     rating: nullableNumber(core?.star_rating),
     reviewCount: nullableNumber(core?.reviews) ?? 0,
     variants,
+    unavailableReason,
   };
 }
 
@@ -279,10 +294,7 @@ export class TakealotClient {
     } catch {
       data = { raw: text };
     }
-    if (!res.ok) {
-      const msg = data?.message ?? data?.error ?? res.statusText;
-      throw new Error(`HTTP ${res.status} ${msg} (${path})`);
-    }
+    if (!res.ok) this.throwApi(res, data, (init.method ?? 'GET').toUpperCase() as HttpMethod, path.startsWith('http') ? path : this.mobileApiBase + path);
     return data as T;
   }
 
@@ -347,8 +359,8 @@ export class TakealotClient {
   }
 
   /** Parse a response by content-type; 204/empty → null; non-2xx → ApiError. */
-  private async parseResponse(res: Response, path: string): Promise<unknown> {
-    if (res.status === 204) return res.ok ? null : this.throwApi(res, null, path);
+  private async parseResponse(res: Response, method: HttpMethod, path: string): Promise<unknown> {
+    if (res.status === 204) return res.ok ? null : this.throwApi(res, null, method, path);
     const text = await res.text().catch(() => '');
     const ctype = (res.headers.get('content-type') || '').toLowerCase();
     let data: unknown = null;
@@ -363,18 +375,21 @@ export class TakealotClient {
         data = text;
       }
     }
-    if (!res.ok) return this.throwApi(res, data, path);
+    if (!res.ok) return this.throwApi(res, data, method, path);
     return data;
   }
 
-  private throwApi(res: Response, body: unknown, path: string): never {
+  private throwApi(res: Response, body: unknown, method: HttpMethod, path: string): never {
     const anyBody = body as any;
     const message =
-      (anyBody && (anyBody.message ?? anyBody.error?.message ?? anyBody.error)) || res.statusText || `HTTP ${res.status}`;
+      [anyBody?.message, anyBody?.error?.message, anyBody?.error, anyBody?.errors?.[0]?.message, res.statusText].find(
+        (value) => typeof value === 'string' && value,
+      ) ?? `HTTP ${res.status}`;
     const rateLimited = res.status === 429 || anyBody?.otp_status?.status === 'cooldown';
     const retryAfterHdr = Number(res.headers.get('retry-after'));
     throw new ApiError({
       status: res.status,
+      method,
       code: rateLimited ? 'rate_limited' : `http_${res.status}`,
       message: redactText(String(message)),
       path: safeUrlPath(path),
@@ -477,7 +492,7 @@ export class TakealotClient {
           await sleep(150 * attempt);
           continue;
         }
-        return await this.parseResponse(res, url);
+        return await this.parseResponse(res, method, url);
       } catch (e) {
         if (e instanceof UsageError || e instanceof ApiError) throw e;
         const aborted = (e as any)?.name === 'AbortError';
@@ -487,6 +502,7 @@ export class TakealotClient {
         }
         throw new ApiError({
           status: 0,
+          method,
           code: aborted ? 'timeout' : 'network',
           message: aborted ? `request timed out after ${timeoutMs}ms` : redactText(String((e as Error)?.message ?? e)),
           path: safeUrlPath(url),
@@ -530,6 +546,22 @@ export class TakealotClient {
       body: args.body,
       idempotent: row.method === 'GET',
     });
+  }
+
+  async productDetails(plid: number): Promise<ProductDetails> {
+    const path = `product-details/PLID${plid}`;
+    const query = { platform: DEFAULTS.platform, offer_opt: true };
+    let data = await this.call('product.details', { params: { plid }, query });
+    let product = parseProductDetails(data, plid);
+    if (product.unavailableReason) {
+      data = await this.apiRequest('GET', path, {
+        auth: this.auth.isAuthenticated,
+        query,
+        idempotent: true,
+      });
+      product = parseProductDetails(data, plid);
+    }
+    return product;
   }
 
   /** Resolve (without executing) the request a `call` would send — for dry-run preview. */
@@ -727,13 +759,10 @@ export class TakealotClient {
 
   /** Resolve a PLID to its buyable SKU id via product-details. */
   async skuForPlid(plid: number, onResolved?: (product: ProductDetails) => void): Promise<number> {
-    const data: any = await this.call('product.details', {
-      params: { plid },
-      query: { platform: DEFAULTS.platform, offer_opt: true },
-    });
-    const product = parseProductDetails(data, plid);
+    const product = await this.productDetails(plid);
     onResolved?.(product);
     if (product.skuId === null) {
+      if (product.unavailableReason) throw new Error(`PLID${plid}: price unavailable (${product.unavailableReason})`);
       const choices = product.variants.map((variant) => `${variant.title}: ${variant.value}`).join(', ');
       throw new UsageError(`PLID${plid} has variants; pick one: ${choices}`);
     }
