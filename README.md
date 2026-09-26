@@ -78,14 +78,14 @@ All data commands accept `--json`. Use `--help` on a command group for its full 
 |------|----------|
 | Find | `search <query> [--limit]` · `autocomplete` · `trending` · `deals` · `info <plid> [--credit-options\|--bundle\|--card\|--reviews]` |
 | Reviews | `reviews <plid> [--page <n>] [--sort <key>]` · `myreviews …` |
-| Recommend | `recommend layout [--location home-page]` · `recommend <location> --model <key> [--limit 10]` · `buy-again` |
+| Recommend | `recommend layout [--location <location>] [--plid <id>]` · `recommend <location> --model <key> [--plid <id>] [--limit 10]` · `buy-again` |
 | Cart | `cart` · `cart add <query>` · `cart add --sku <id>` · `cart add --plid <id>` · `cart set-qty` · `cart remove` · `cart basket` · `cart clear` |
 | Checkout | `checkout` (read-only preview) · `checkout start` · `checkout submit --file <json>` for delivery or pickup selections |
 | Cards and credits | `cards` (never exposes card references) · `cards rm --last4 <dddd>` · `credits …` |
 | Orders | `orders` · `orders show <id>` · tracking/cancellation/rescheduling commands · `invoices <orderId>` and its PDF, request, credit-note, and business-detail variants |
 | Account | addresses, returns, refunds, wishlist, Plus, account/security, help/chat, config, and preferences command groups |
 
-`recommend layout` returns model keys for `recommend <location> --model`. The supported locations are `home-page`, `add-to-cart`, `landing-page`, and `domain`; `pdp` is rejected because the API does not currently support it.
+`recommend layout` returns model keys for `recommend <location> --model`. The supported locations are `home-page`, `pdp`, `add-to-cart`, `landing-page`, and `domain`. PDP requests require the product context: `recommend layout --location pdp --plid <id>`, then `recommend pdp --plid <id> --model <key>`.
 
 `invoices <orderId>` accepts the numeric order id shown by `orders`; the CLI resolves it to Takealot's obfuscated order id before calling invoice endpoints.
 

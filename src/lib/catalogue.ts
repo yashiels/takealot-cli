@@ -30,6 +30,8 @@ export interface EndpointRow {
   reason?: string;
   /** The CLI command that wires it (null when excluded). */
   command: string | null;
+  argument?: { name: string; query: string };
+  defaultQuery?: Record<string, unknown>;
   /** Args the contract test drives to assert method/path/auth/encoding. */
   sample?: { params?: Record<string, string | number>; query?: Record<string, unknown>; body?: unknown };
 }
@@ -90,10 +92,10 @@ export const CATALOGUE: EndpointRow[] = [
 
   // ── 2. Config, App & Telemetry ─────────────────────────────────────────
   r({ id: 'config.get', domain: 'config', method: 'GET', path: 'config', auth: false, encoding: 'none', mutating: false, command: 'config remote', sample: {} }),
-  r({ id: 'config.appVersion', domain: 'config', method: 'GET', path: 'app-version', auth: false, encoding: 'none', mutating: false, command: 'config app-version', sample: {} }),
+  r({ id: 'config.appVersion', domain: 'config', method: 'GET', path: 'app-version', auth: false, encoding: 'none', mutating: false, command: 'config app-version', defaultQuery: { platform: 'android', app_version: '4.3.0' }, sample: { query: { platform: 'android', app_version: '4.3.0' } } }),
   r({ id: 'config.abtest', domain: 'config', method: 'GET', path: 'ab-test/assign-buckets', auth: false, encoding: 'none', mutating: false, command: null, excluded: true, reason: 'A/B bucket assignment is app internals, not a shopping action' }),
-  r({ id: 'cms.page', domain: 'config', method: 'GET', path: 'cms/pages/{slug}', auth: false, encoding: 'none', mutating: false, command: 'cms page', sample: { params: { slug: 'help' } } }),
-  r({ id: 'cms.route', domain: 'config', method: 'GET', path: 'cms/route', auth: false, encoding: 'none', mutating: false, command: 'cms route', sample: { query: { url: '/x' } } }),
+  r({ id: 'cms.page', domain: 'config', method: 'GET', path: 'cms/pages/{slug}', auth: false, encoding: 'none', mutating: false, command: 'cms page', defaultQuery: { platform: 'android' }, sample: { params: { slug: 'mobile-homepage' }, query: { platform: 'android' } } }),
+  r({ id: 'cms.route', domain: 'config', method: 'GET', path: 'cms/route', auth: false, encoding: 'none', mutating: false, command: 'cms route', argument: { name: 'link', query: 'link' }, sample: { query: { link: 'https://www.takealot.com/PLID52580339' } } }),
   r({ id: 'ute.collect', domain: 'config', method: 'POST', path: 'collect', auth: false, encoding: 'json', mutating: true, command: null, excluded: true, reason: 'UTE analytics/telemetry ingest — nothing to expose to a shopper' }),
 
   // ── 3. Search & Browse ─────────────────────────────────────────────────
@@ -263,7 +265,7 @@ export const CATALOGUE: EndpointRow[] = [
 
   // ── 16. Account, Personal Details & Security ────────────────────────────
   r({ id: 'account.summary', domain: 'account', method: 'GET', path: 'customers/summary', auth: true, encoding: 'none', mutating: false, command: 'account summary', sample: {} }),
-  r({ id: 'account.group.get', domain: 'account', method: 'GET', path: 'customers/{customerId}/groups/{groupId}', auth: true, encoding: 'none', mutating: false, command: 'account group form', sample: { params: { ...CID, groupId: 'G1' } } }),
+  r({ id: 'account.group.get', domain: 'account', method: 'GET', path: 'customers/{customerId}/groups/{groupId}', auth: true, encoding: 'none', mutating: false, command: 'account group form', sample: { params: { ...CID, groupId: 'personal' } } }),
   r({ id: 'account.group.update', domain: 'account', method: 'PUT', path: 'customers/{customerId}/groups/{groupId}/sections/{sectionId}', auth: true, encoding: 'json', mutating: true, command: 'account group submit', sample: { params: { ...CID, groupId: 'G1', sectionId: 'S1' }, body: {} } }),
   r({ id: 'account.email.get', domain: 'account', method: 'GET', path: 'customers/account/personal/email', auth: true, encoding: 'none', mutating: false, command: 'account personal email form', sample: {} }),
   r({ id: 'account.email.set', domain: 'account', method: 'PUT', path: 'customers/account/personal/email', auth: true, encoding: 'json', mutating: true, command: 'account personal email submit', sample: { body: {} } }),
@@ -299,9 +301,9 @@ export const CATALOGUE: EndpointRow[] = [
   // ── 19. Help & Chatbot ─────────────────────────────────────────────────
   r({ id: 'help.topics', domain: 'help', method: 'GET', path: 'help/topics', auth: false, encoding: 'none', mutating: false, command: 'help topics', sample: {} }),
   r({ id: 'help.topic', domain: 'help', method: 'GET', path: 'help/topic/{slug}', auth: false, encoding: 'none', mutating: false, command: 'help topic', sample: { params: { slug: 'returns' } } }),
-  r({ id: 'help.context', domain: 'help', method: 'GET', path: 'help/context/{slug}', auth: false, encoding: 'none', mutating: false, command: 'help context', sample: { params: { slug: 'cart' } } }),
-  r({ id: 'help.search', domain: 'help', method: 'GET', path: 'help/search', auth: false, encoding: 'none', mutating: false, command: 'help search', sample: { query: { q: 'refund' } } }),
-  r({ id: 'help.search.autocomplete', domain: 'help', method: 'GET', path: 'help/search/autocomplete', auth: false, encoding: 'none', mutating: false, command: 'help search --autocomplete', sample: { query: { q: 'ref' } } }),
+  r({ id: 'help.context', domain: 'help', method: 'GET', path: 'help/context/{slug}', auth: false, encoding: 'none', mutating: false, command: 'help context', sample: { params: { slug: 'order_details_and_tracking_context' } } }),
+  r({ id: 'help.search', domain: 'help', method: 'GET', path: 'help/search', auth: false, encoding: 'none', mutating: false, command: 'help search', argument: { name: 'query', query: 'search' }, defaultQuery: { page: 1, page_size: 20 }, sample: { query: { search: 'refund', page: 1, page_size: 20 } } }),
+  r({ id: 'help.search.autocomplete', domain: 'help', method: 'GET', path: 'help/search/autocomplete', auth: false, encoding: 'none', mutating: false, command: 'help search --autocomplete', argument: { name: 'query', query: 'search' }, sample: { query: { search: 'ref' } } }),
   r({ id: 'help.chat.get', domain: 'help', method: 'GET', path: 'help/chatbot', auth: true, encoding: 'none', mutating: false, command: 'help chat start', sample: {} }),
   r({ id: 'help.chat.send', domain: 'help', method: 'POST', path: 'help/chatbot', auth: true, encoding: 'json', mutating: true, command: 'help chat send', sample: { body: {} } }),
   r({ id: 'help.chat.end', domain: 'help', method: 'GET', path: 'help/chatbot/end', auth: true, encoding: 'none', mutating: false, command: 'help chat end', sample: {} }),

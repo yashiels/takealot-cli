@@ -196,7 +196,16 @@
     "encoding": "none",
     "mutating": false,
     "command": "config app-version",
-    "sample": {}
+    "defaultQuery": {
+      "platform": "android",
+      "app_version": "4.3.0"
+    },
+    "sample": {
+      "query": {
+        "platform": "android",
+        "app_version": "4.3.0"
+      }
+    }
   },
   {
     "base": "mobile",
@@ -222,9 +231,15 @@
     "encoding": "none",
     "mutating": false,
     "command": "cms page",
+    "defaultQuery": {
+      "platform": "android"
+    },
     "sample": {
       "params": {
-        "slug": "help"
+        "slug": "mobile-homepage"
+      },
+      "query": {
+        "platform": "android"
       }
     }
   },
@@ -239,9 +254,13 @@
     "encoding": "none",
     "mutating": false,
     "command": "cms route",
+    "argument": {
+      "name": "link",
+      "query": "link"
+    },
     "sample": {
       "query": {
-        "url": "/x"
+        "link": "https://www.takealot.com/PLID52580339"
       }
     }
   },
@@ -2717,7 +2736,7 @@
     "sample": {
       "params": {
         "customerId": 12345,
-        "groupId": "G1"
+        "groupId": "personal"
       }
     }
   },
@@ -3195,7 +3214,7 @@
     "command": "help context",
     "sample": {
       "params": {
-        "slug": "cart"
+        "slug": "order_details_and_tracking_context"
       }
     }
   },
@@ -3210,9 +3229,19 @@
     "encoding": "none",
     "mutating": false,
     "command": "help search",
+    "argument": {
+      "name": "query",
+      "query": "search"
+    },
+    "defaultQuery": {
+      "page": 1,
+      "page_size": 20
+    },
     "sample": {
       "query": {
-        "q": "refund"
+        "search": "refund",
+        "page": 1,
+        "page_size": 20
       }
     }
   },
@@ -3227,9 +3256,13 @@
     "encoding": "none",
     "mutating": false,
     "command": "help search --autocomplete",
+    "argument": {
+      "name": "query",
+      "query": "search"
+    },
     "sample": {
       "query": {
-        "q": "ref"
+        "search": "ref"
       }
     }
   },

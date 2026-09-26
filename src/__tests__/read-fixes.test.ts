@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
 import { Command } from 'commander';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Context } from '../lib/context.js';
@@ -14,6 +15,7 @@ import { wishlistAdd } from '../commands/wishlist.js';
 import { reviewsCommand } from '../commands/reviews.js';
 import { recommendCommand, recommendLayout } from '../commands/recommend.js';
 import { registerCatalogue } from '../commands/register.js';
+import { fetchForm, readEndpoint } from '../commands/generic.js';
 import { mkClient } from './mkclient.js';
 
 const fixtureDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', '4.3.0');
@@ -108,14 +110,38 @@ describe('recommendations against app 4.3.0', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('rejects pdp and unknown locations before any request', async () => {
+  it('builds pdp layout context from the numeric PLID', async () => {
+    const { client, calls } = mkClient({ body: recoLayout });
+    await recommendLayout(context(client), 'pdp', { plid: 52580339 });
+    const url = new URL(calls[0]!.url);
+    expect(url.pathname).toMatch(/\/recommendations\/pdp\/layout$/);
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      platform: 'android',
+      number_of_slots: '5',
+      has_customer_id: 'true',
+      context: 'PLID:52580339',
+    });
+  });
+
+  it('builds pdp product context from the numeric PLID', async () => {
+    const { client, calls } = mkClient({ body: recoHome });
+    await recommendCommand(context(client), 'pdp', { model: 'ymal', limit: 3, plid: 52580339 });
+    const url = new URL(calls[0]!.url);
+    expect(url.pathname).toMatch(/\/recommendations\/pdp$/);
+    expect(url.searchParams.get('context')).toBe('PLID:52580339');
+  });
+
+  it('requires pdp context and rejects unknown locations before any request', async () => {
     const { client, fetchMock } = mkClient({ body: recoHome });
     await expect(
       recommendCommand(context(client), 'pdp', { model: 'x', limit: 3 }),
-    ).rejects.toThrow('pdp recommendations are not supported by the API yet');
+    ).rejects.toThrow('--plid is required for pdp recommendations');
+    await expect(recommendLayout(context(client), 'pdp')).rejects.toThrow(
+      '--plid is required for pdp recommendations',
+    );
     await expect(
       recommendCommand(context(client), 'other', { model: 'x', limit: 3 }),
-    ).rejects.toThrow(/valid values: home-page, add-to-cart, landing-page, domain/);
+    ).rejects.toThrow(/valid values: home-page, pdp, add-to-cart, landing-page, domain/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
@@ -134,6 +160,92 @@ describe('wishlist add compatibility', () => {
     expect(calls[0]!.init.method).toBe('POST');
     expect(calls[0]!.url).toMatch(/\/customers\/12345\/wishlists\/42\/items$/);
     expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ products: [{ id: 7 }] });
+  });
+});
+
+describe('catalogue command request parameters against app 4.3.0', () => {
+  it.each([
+    {
+      argv: ['config', 'app-version'],
+      path: '/app-version',
+      query: { platform: 'android', app_version: '4.3.0' },
+    },
+    {
+      argv: ['cms', 'page', 'mobile-homepage'],
+      path: '/cms/pages/mobile-homepage',
+      query: { platform: 'android' },
+    },
+    {
+      argv: ['cms', 'route', 'https://www.takealot.com/PLID52580339'],
+      path: '/cms/route',
+      query: { link: 'https://www.takealot.com/PLID52580339' },
+    },
+    {
+      argv: ['help', 'search', 'refund'],
+      path: '/help/search',
+      query: { page: '1', page_size: '20', search: 'refund' },
+    },
+    {
+      argv: ['help', 'search', 'ref', '--autocomplete'],
+      path: '/help/search/autocomplete',
+      query: { search: 'ref' },
+    },
+  ])('builds $path from positional and default query parameters', async ({ argv, path: expectedPath, query }) => {
+    const { client, calls } = mkClient({ body: {} });
+    const ctx = context(client, true);
+    const pending: Promise<void>[] = [];
+    const program = new Command();
+    registerCatalogue(
+      program,
+      (command) => command,
+      (_command, fn) => {
+        pending.push(fn(ctx));
+      },
+      () => ({}),
+    );
+    await program.parseAsync(['node', 'takealot', ...argv]);
+    await Promise.all(pending);
+    const url = new URL(calls[0]!.url);
+    expect(url.pathname).toBe(`/rest/v-1-18-0${expectedPath}`);
+    expect(Object.fromEntries(url.searchParams)).toEqual(query);
+  });
+});
+
+describe('state-dependent read errors', () => {
+  const notSubscribed = (description: string) => ({
+    notifications: [{ type: 'error', code: 'generic-error', title: 'Bad Request', description }],
+  });
+
+  it.each([
+    ['plus.cancel.form', 404, 'No active subscription found', 'active subscription', true],
+    ['plus.claimDiscount.form', 400, 'This customer is not subscribed', 'active eligible subscription', true],
+    ['plus.manage.plan', 400, 'This customer is not subscribed', 'active subscription', false],
+  ] as const)('explains why %s is unavailable', async (id, status, description, message, form) => {
+    const { client } = mkClient({ status, body: notSubscribed(description) });
+    const ctx = context(client);
+    const request = form ? fetchForm(ctx, 'conditional', id) : readEndpoint(ctx, id);
+    await expect(request).rejects.toMatchObject({ code: 'unavailable_state', message: expect.stringContaining(message) });
+  });
+
+  it.each([
+    ['plus.manage.plan', 400, notSubscribed('Invalid plan id')],
+    ['plus.manage.plan', 500, notSubscribed('This customer is not subscribed')],
+    ['plus.cancel.form', 404, {}],
+    ['returns.checkout.pickupPoints', 500, { message: 'Server Error', status: 500 }],
+  ] as const)('keeps the raw API error for %s %s without the not-subscribed signal', async (id, status, body) => {
+    const { client } = mkClient({ status, body });
+    await expect(readEndpoint(context(client), id)).rejects.toMatchObject({ name: 'ApiError' });
+  });
+});
+
+describe('id options', () => {
+  const cliPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '../../dist/cli.js');
+  it.each(['abc', '1.5', '0', '-4', '9007199254740993', '12x'])('rejects --plid %s before any request', (value) => {
+    const res = spawnSync('node', [cliPath, 'recommend', 'pdp', '--plid', value, '--model', 'ymal', '--json'], {
+      encoding: 'utf8',
+    });
+    expect(res.status).toBe(4);
+    expect(res.stdout).toContain('expected a positive integer id');
   });
 });
 

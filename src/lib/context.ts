@@ -92,6 +92,7 @@ export class Context {
       mobileApiBase: this.config.mobileApiBase,
       browserUserAgent: this.config.browserUserAgent,
       mobileUserAgent: mobileUA,
+      platform: this.config.platform,
       history: loadPreferences(),
       preferredBrands: this.config.preferredBrands ?? [],
     });

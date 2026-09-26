@@ -136,6 +136,7 @@ export interface ClientOptions {
   browserUserAgent?: string;
   /** Mobile UA for authenticated calls (built from the device profile). */
   mobileUserAgent?: string;
+  platform?: string;
   /** Order-history products for preference matching. */
   history?: PreferenceItem[];
   /** Explicit preferred brands for preference matching. */
@@ -224,6 +225,7 @@ export class TakealotClient {
   private mobileApiBase: string;
   private browserUA: string;
   private mobileUA: string;
+  private platform: string;
   private history: PreferenceItem[];
   private preferredBrands: string[];
 
@@ -234,6 +236,7 @@ export class TakealotClient {
     this.mobileApiBase = opts.mobileApiBase ?? DEFAULTS.mobileApiBase;
     this.browserUA = opts.browserUserAgent ?? DEFAULTS.browserUserAgent;
     this.mobileUA = opts.mobileUserAgent ?? DEFAULTS.mobileUserAgent;
+    this.platform = opts.platform ?? DEFAULTS.platform;
     this.history = opts.history ?? [];
     this.preferredBrands = opts.preferredBrands ?? [];
   }
@@ -274,6 +277,7 @@ export class TakealotClient {
       accept: 'application/json, */*',
       'content-type': 'application/json',
       'user-agent': this.mobileUA,
+      'x-tal-platform': this.platform,
       ...this.auth.authHeaders(),
       ...((init.headers as Record<string, string>) ?? {}),
     };
@@ -404,6 +408,7 @@ export class TakealotClient {
     const headers: Record<string, string> = {
       accept: 'application/json, */*',
       'user-agent': ua,
+      ...(base === 'mobile' ? { 'x-tal-platform': this.platform } : {}),
       ...this.auth.deviceHeaders(),
       ...((init.headers as Record<string, string>) ?? {}),
     };
