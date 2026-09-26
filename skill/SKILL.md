@@ -1,11 +1,11 @@
 ---
 name: takealot
-description: Shop Takealot.com end-to-end from the terminal, headless-first for agents. Search, browse, cart, checkout & pay, orders, tracking, returns, wishlist, credits, Plus, account — all 192 API endpoints, device-trust auth that skips OTP after first login, --json everywhere, dry-run-by-default writes.
+description: Use when shopping or managing a Takealot account from the terminal. Search, browse, cart, preview checkout, orders, tracking, invoices, returns, wishlist, credits, Plus, cards, and account operations through a headless API CLI with device-trust auth, JSON output, and dry-run writes; order placement and payment are blocked.
 ---
 
 # takealot skill
 
-Shop on Takealot.com from the terminal — search products, manage your cart, check out, and review order history. Talks directly to the Takealot mobile REST API; no browser required.
+Use `takealot` for Takealot catalogue and account work without a browser. The agent has broad account access, but the CLI cannot place orders or pay. Hand the owner the checkout preview and tell him to pay in the Takealot app.
 
 ## Install
 
@@ -13,34 +13,15 @@ Shop on Takealot.com from the terminal — search products, manage your cart, ch
 brew install yashiels/tap/takealot
 ```
 
-Or download a standalone binary from the [latest release](https://github.com/yashiels/takealot-cli/releases/latest).
+Every data command supports `--json`. Prefer JSON when selecting products or passing results between tools.
 
-**Build from source** (Node ≥ 18 required):
+## Authentication
 
-```bash
-git clone https://github.com/yashiels/takealot-cli.git
-cd takealot-cli
-npm install && npm run build
-npm link   # puts `takealot` on your PATH
-```
+Credentials, rotating tokens, and the device record are stored in `~/.config/takealot-cli/credentials.json` with mode `0600`. Tokens refresh automatically. The CLI replays Takealot's server-assigned `did` as the `TAL-Did` header and `did` cookie on authenticated requests.
 
-## Credentials
+Complete 2FA once with device trust enabled. Later logins, including full re-login after token expiry, normally skip OTP while the stored device identity remains trusted.
 
-Credentials are managed by the `takealot login` command and cached automatically. The CLI stores email, plaintext password (protected only by filesystem permissions, chmod 0600), and cached tokens in `~/.config/takealot-cli/credentials.json` (XDG-respecting, `chmod 0600`).
-
-The `login` command prompts for your Takealot account email and password interactively, then caches the token set. If your account has two-step verification (2FA) enabled, you will also be prompted for an OTP code sent to your phone. Tokens auto-refresh on expiry; if refresh fails and full login is required, a 2FA account requires an interactive OTP prompt.
-
-## Automated / agent usage
-
-The CLI is built for headless agents. Device trust rides on a server-assigned
-`did` the CLI persists and replays on every request (`TAL-Did` header + `did`
-cookie). **Once 2FA is completed a single time with device trust, later logins —
-including a full re-login after tokens are wiped — skip the OTP entirely**, so
-agents keep working unattended.
-
-**Credential injection (no interactive prompt):** set `TAKEALOT_EMAIL` +
-`TAKEALOT_PASSWORD` in the environment (these override any stored pair). This is
-op-sa / 1Password friendly:
+For unattended use, inject credentials through the environment:
 
 ```bash
 TAKEALOT_EMAIL="$(op-sa read op://Agents/takealot/username)" \
@@ -48,211 +29,154 @@ TAKEALOT_PASSWORD="$(op-sa read op://Agents/takealot/password)" \
   takealot cart --json
 ```
 
-**First-time / untrusted-device 2FA is a two-step, TTY-free handshake:**
+For a first-time or untrusted device, use the two-step OTP flow:
 
-1. Trigger the challenge — the CLI sends the OTP to the user's phone and prints
-   the challenge to complete:
+1. Trigger the challenge:
+
    ```bash
    takealot login --json
-   # → {"status":"otp_required","challenge":"<nonce>","otpSentTo":"…","expiresInSec":300}
+   # {"status":"otp_required","challenge":"<nonce>","otpSentTo":"…","expiresInSec":300}
    ```
-   (exit 0). If the device is already trusted this instead prints
-   `{"status":"ok","customerId":…}` and you're done.
-2. Ask the user for the code they received, then complete it — the `--challenge`
-   nonce from step 1 is **required**:
+
+2. Ask the owner for the code, then submit it with the returned challenge:
+
    ```bash
    TAKEALOT_OTP=123456 TAKEALOT_CHALLENGE=<nonce> takealot login --json
-   # or: takealot login --otp 123456 --challenge <nonce> --json
    ```
-   Prefer the env vars — `--otp` leaks via the process list / shell history.
 
-- Structured error codes under `--json`: `otp_required` (no live challenge — run
-  `takealot login` first), `otp_state_mismatch` (wrong/absent `--challenge`, or
-  account/device changed), `otp_expired` (re-run `takealot login`).
-- **Never run `takealot login --reset` unattended** — it re-prompts for
-  email/password and needs a TTY. Use env injection instead.
-- Multiple agents driving *different* accounts on one box must use separate
-  `XDG_CONFIG_HOME` dirs; same-account concurrent invocations are safe (writes are
-  serialized by a cross-process lock).
-- Search needs no login, so `takealot search … --json` always works.
-- For checkout, always dry-run first (`takealot checkout`) and only pass
-  `--confirm --yes` when the user has explicitly approved the order and total.
+The CLI carries the first response's `__cf_bm` cookie into the OTP request. Prefer environment variables because `--otp` and `--challenge` can remain in process listings or shell history.
+
+JSON auth errors include `otp_required`, `otp_state_mismatch`, and `otp_expired`. Re-run the first login step after expiry. Never run `login --reset` unattended because it needs credential input. Use separate `XDG_CONFIG_HOME` directories for different accounts on one machine.
+
+New credentials use Android app 4.3.0, build 800751. Existing credentials keep their persisted device profile to avoid de-trusting the device. To adopt the current default deliberately, delete only `device.profile` from the stored credentials.
+
+## Core workflow
+
+1. Search or inspect a listing.
+2. Add a buyable SKU to the cart.
+3. Read the cart and checkout preview.
+4. Give the preview to the owner and tell him to pay in the Takealot app.
+
+```bash
+takealot search "coffee beans" --limit 5 --json
+takealot info 52341565 --json
+takealot cart add --plid 52341565
+takealot cart --json
+takealot checkout --json
+```
+
+`cart add --plid` resolves product detail to its buyable SKU before printing the dry run. A multi-variant listing without a single SKU is rejected with the available variants; choose the correct variant rather than guessing. Use `--sku` when the exact buyable id is already known.
+
+`checkout` is read-only. It returns items, subtotal, discounts, credits, total, `amountDue`, shipping method, `sectionsIncomplete`, and `payInApp: true`. It never places the order. Order-completion and payment endpoints are blocked at the transport boundary.
 
 ## Commands
 
-### Search (no login required)
+### Search and product detail
 
 ```bash
-takealot search <query>
-takealot search <query> --limit <n>     # max results (default 10)
-takealot search <query> --json          # machine-readable output
+takealot search <query> [--limit <n>] [--json]
+takealot autocomplete --query query=<text>
+takealot trending
+takealot deals
+takealot info <plid> [--credit-options] [--bundle <ids>] [--card] [--reviews]
+takealot reviews <plid> [--page <n>] [--sort <key>]
 ```
 
-Examples:
+### Recommendations
 
 ```bash
-takealot search "protein powder"
-takealot search "pencils" --limit 5
-takealot search "coffee" --json | jq '.[0]'
+takealot recommend layout [--location home-page]
+takealot recommend <location> --model <key> [--limit 10]
+takealot buy-again
 ```
+
+Run `recommend layout` first to obtain model keys. Supported locations are `home-page`, `add-to-cart`, `landing-page`, and `domain`. Do not use `pdp`; the CLI rejects it because the API does not support it reliably.
 
 ### Cart
 
 ```bash
-takealot cart                           # show current cart
-takealot cart add <item>                # add one item (preference-ranked match)
-takealot cart basket "<item>; ..."      # add several items at once
-takealot cart clear                     # empty the cart
-```
-
-`cart add` accepts an optional leading quantity:
-
-```bash
-takealot cart add "3 pencils"
-takealot cart add "2 packs sunscreen"
-```
-
-`cart basket` splits on commas, semicolons, or newlines and adds items in parallel:
-
-```bash
-takealot cart basket "milk; bread; eggs; coffee"
-takealot cart basket "3 pens, notebook, sticky notes"
-```
-
-### Checkout
-
-```bash
-takealot checkout                       # dry-run: print totals, address, card — no charge
-takealot checkout --confirm             # place the order and pay with the saved card
-takealot checkout --confirm --yes       # skip the interactive confirmation prompt
-```
-
-The dry-run prints the full order summary (items, delivery address, payment method, total) so you can verify before committing.
-
-### Orders
-
-```bash
-takealot orders                         # list recent orders (default 20)
-takealot orders --limit <n>             # show more/fewer orders
-takealot orders show <id>               # full detail for one order
-```
-
-### Preferences
-
-The preference engine learns from your order history and ranks search results for `cart add`.
-
-```bash
-takealot preferences                    # show the current preference cache
-takealot preferences show               # same
-takealot preferences refresh            # rebuild cache from full order history
-```
-
-Run `preferences refresh` after your first login to seed the cache.
-
-### Config
-
-```bash
-takealot config                         # show config and credential status (secrets redacted)
-takealot config show                    # same
-```
-
-Config lives in `~/.config/takealot-cli/` (respects `$XDG_CONFIG_HOME`):
-
-| File | Contents |
-|------|----------|
-| `config.json` | API base URLs, preferred card, explicit brand list |
-| `credentials.json` | Email, plaintext password (protected only by filesystem permissions, chmod 0600), and cached tokens |
-| `preferences.json` | Order-history preference cache |
-
-### Auth
-
-```bash
-takealot login                          # log in, cache tokens
-takealot login --reset                  # clear stored credentials and re-authenticate
-```
-
-### Global Flags
-
-| Flag | Effect |
-|------|--------|
-| `--json` | Machine-readable JSON output (works on every command) |
-| `--verbose` | Print debug logging to stderr |
-| `--version` | Print the version and exit |
-| `--help` | Show help for any command or subcommand |
-
-**Exit codes:** `0` success · `1` general failure
-
-## Preference Engine
-
-When you run `takealot cart add`, the tool picks the best product match through a ranked funnel:
-
-1. **Exact match** — a product you've ordered before with the same title
-2. **Brand match** — a product in the same category from a brand you've bought before
-3. **Explicit brand list** — brands listed in `config.json → preferredBrands`
-4. **Fuzzy similarity** — Jaccard coefficient on title tokens
-
-Seed the cache once with `takealot preferences refresh` after your first login. The cache updates automatically as you order more.
-
-## Quick-Start Example
-
-```bash
-# 1. Install
-brew install yashiels/tap/takealot
-
-# 2. Authenticate
-takealot login
-
-# 3. Seed the preference engine
-takealot preferences refresh
-
-# 4. Search and shop
-takealot search "protein bar" --limit 5
-takealot cart add "2 protein bars"
-takealot cart basket "milk; bread; eggs"
 takealot cart
-
-# 5. Review and place order
-takealot checkout              # dry-run first
-takealot checkout --confirm    # then pay
+takealot cart add "3 pencils"
+takealot cart add --sku <id> --qty <n>
+takealot cart add --plid <id> --qty <n>
+takealot cart set-qty <sku> <n>
+takealot cart remove <sku>
+takealot cart basket "milk; bread; eggs"
+takealot cart clear
 ```
 
-## Full shopping surface
+Writes are dry runs without `--confirm`. Text search uses the preference engine: exact prior purchase, prior brand in category, configured preferred brand, then title similarity.
 
-The CLI now covers every non-telemetry endpoint the Takealot app exposes (see
-`docs/endpoints-catalogue.json` — the frozen manifest). Commands are `--json` throughout.
-
-**Typed core** (nice human + rich JSON): `search`, `info <PLID>`, `cart` (+ `add --sku/--plid`,
-`set-qty`, `remove`, `basket`, `clear`), `checkout` (dry-run shows delivery + card + total;
-`--confirm` pays; `resume <orderId>` after 3DS).
-
-**Passthrough** (raw API JSON under `--json`, compact summary otherwise): `deals`, `recommend`,
-`buy-again`, `autocomplete`, `trending`, `reviews`, `orders …`, `returns …`, `refunds …`,
-`wishlist …`, `credits …`, `cards …`, `address …`, `pickup-points`, `invoices …`, `plus …`
-(Takealot Plus), `account …`, `myreviews …`, `help …` (incl. `help chat`).
-
-### Safety contracts (important for agents)
-
-- **Writes are dry-run by default.** Any state-changing command prints the exact request it
-  *would* send and does nothing; add `--confirm` to perform it (`--yes` skips the TTY prompt).
-  Example: `takealot address use A123` → dry run; `takealot address use A123 --confirm`.
-- **Redaction on by default.** Secrets are masked in all output and errors; 3DS challenge URLs
-  and signed invoice/PDF URLs are preserved so workflows still work. `--unsafe-raw` prints
-  literal JSON (leaks secrets — avoid).
-- **Identifiers are explicit:** `--sku` (buyable) vs `--plid` (listing); `cart set-qty`/`remove`
-  take the buyable SKU id.
-- **Checkout is idempotent:** an interrupted `--confirm` is reconciled (never re-charged); a 3DS
-  challenge yields `{ "status": "action_required", "challengeUrl": … }` — open it, then
-  `takealot checkout resume <orderId>`.
-
-### Data-section writes (form → submit)
-
-Some account/returns/subscription writes are server-defined forms. Two steps:
+### Checkout, cards, and credits
 
 ```bash
-takealot account password form              # fetch + locally cache the form layout
-# edit the JSON, keeping the section_id/field_id from the form
-takealot account password submit --file filled.json --confirm
+takealot checkout
+takealot checkout start [--file <json>]
+takealot checkout submit --file <json>
+takealot cards
+takealot cards rm --last4 <dddd>
+takealot credits
 ```
 
-`submit` validates your section/field ids against the fetched form locally (rejecting foreign or
-stale ids) before sending. Use `--file -` to read the payload from stdin.
+`checkout start` and `checkout submit` can update checkout delivery or pickup selections; they are dry-run writes and do not place an order. `cards` returns bank, scheme, last four digits, expiry, selected state, and enabled state. It never returns card references, including with `--unsafe-raw`. Card removal resolves the hidden reference from `--last4` and requires exactly one match.
+
+### Orders and invoices
+
+```bash
+takealot orders [--limit <n>]
+takealot orders show <id>
+takealot orders track <id>
+takealot invoices <orderId>
+takealot invoices pdf <orderId> <invoiceId>
+takealot invoices creditnote-pdf <orderId> <creditnoteId>
+```
+
+Invoice commands accept the numeric id printed by `orders`. The CLI searches order history and resolves it to `obfuscated_order_id` before calling invoice, credit-note, request, or business-detail paths.
+
+### Full account surface
+
+The catalogue also exposes addresses and pickup points, returns and refunds, wishlists, credits and vouchers, Takealot Plus non-payment operations, account and security, personal reviews, and help/chat. Run `takealot --help` and group-level `--help` for the generated commands.
+
+Some writes use a server-provided form followed by a submit:
+
+```bash
+takealot account password form
+takealot account password submit --file filled.json --confirm --i-know
+```
+
+The CLI caches the fetched form and rejects foreign or stale section and field ids. Use `--file -` for stdin.
+
+## Write policy
+
+- State-changing commands are dry runs by default. Add `--confirm` to write and `--yes` to skip a TTY confirmation.
+- Password, email, mobile, 2FA-disable, and trusted-device removal writes require `--i-know` together with `--confirm`.
+- The CLI cannot place orders or pay. Hand the owner the checkout preview and tell him to pay in the app.
+- Payment, order-completion, 3DS, eBucks payment, and Takealot Plus payment or plan-change paths are blocked even if called indirectly.
+
+### Writes that need the owner's explicit OK
+
+Default rule: every `--confirm` needs an explicit yes from the owner for that specific action. This includes anything not listed below as an exception, for example `address use`, `checkout submit`/`start`, `credits redeem`, help-chat messages, account-security changes, card removal, order cancel/reschedule, returns and refunds, address writes, Plus changes, invoice business details, and review writes. `--i-know` is a safety acknowledgement, not authorization.
+
+Exceptions (no per-action OK needed):
+
+- Cart and wishlist changes the owner asked for while building a basket (`cart add`, `cart set-qty`, `cart remove`, `cart basket`, wishlist add/remove). `cart clear` still needs an OK when the cart holds items the owner did not ask for.
+- Read commands and dry runs (no `--confirm`).
+
+## Output contract
+
+JSON failures are written to stdout:
+
+```json
+{ "error": "message", "code": "stable_error_code", "status": 400 }
+```
+
+`status` is optional.
+
+| Exit | Meaning                                          |
+| ---- | ------------------------------------------------ |
+| `0`  | Success or dry run                               |
+| `1`  | Runtime or API failure                           |
+| `3`  | Authentication or OTP failure                    |
+| `4`  | Invalid usage or blocked order/payment operation |
+
+Output is recursively redacted. `--unsafe-raw` is only for deliberate debugging and never reveals card references through `cards`.

@@ -20,8 +20,8 @@ export const DEFAULT_DEVICE_PROFILE: DeviceProfile = {
   androidRelease: '14',
   brand: 'samsung',
   model: 'SM-S928B',
-  appVersion: '4.2.2',
-  appBuild: '800750',
+  appVersion: '4.3.0',
+  appBuild: '800751',
 };
 
 /** The effective device profile: defaults overlaid with any config override. */

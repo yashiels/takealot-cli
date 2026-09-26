@@ -95,7 +95,7 @@ export const DEFAULTS = {
   browserUserAgent:
     'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36',
   // Fallback only — the client is normally handed a UA built from the device profile.
-  mobileUserAgent: 'TAL-Android/4.2.2 (fi.android.takealot; build:800750; 14; samsung; SM-S928B; Phone)',
+  mobileUserAgent: 'TAL-Android/4.3.0 (fi.android.takealot; build:800751; 14; samsung; SM-S928B; Phone)',
   platform: 'android',
 } as const;
 

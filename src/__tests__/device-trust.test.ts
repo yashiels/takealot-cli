@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { AuthManager, extractSetCookie, cookieValue } from '../lib/auth.js';
+import { saveCredentials } from '../lib/config.js';
+import { Context } from '../lib/context.js';
 import { buildUserAgent, DEFAULT_DEVICE_PROFILE } from '../lib/device.js';
 import type { Credentials, DeviceRecord, TokenSet } from '../types.js';
 
@@ -96,14 +101,47 @@ function scriptFetch(handler: (url: string) => Response) {
   }) as any;
 }
 
+function withTempConfig(run: () => void): void {
+  const originalXdg = process.env.XDG_CONFIG_HOME;
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'takealot-device-'));
+  process.env.XDG_CONFIG_HOME = temp;
+  try {
+    run();
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+    if (originalXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+    else process.env.XDG_CONFIG_HOME = originalXdg;
+  }
+}
+
 describe('device profile + UA', () => {
-  it('buildUserAgent renders the mobile UA from the profile', () => {
+  it('uses the 4.3.0 UA for fresh credentials', () => {
     expect(buildUserAgent(DEFAULT_DEVICE_PROFILE)).toBe(
-      'TAL-Android/4.2.2 (fi.android.takealot; build:800750; 14; samsung; SM-S928B; Phone)',
+      'TAL-Android/4.3.0 (fi.android.takealot; build:800751; 14; samsung; SM-S928B; Phone)',
     );
-    expect(
-      buildUserAgent({ androidRelease: '15', brand: 'google', model: 'Pixel 9', appVersion: '4.2.2', appBuild: '800750' }),
-    ).toBe('TAL-Android/4.2.2 (fi.android.takealot; build:800750; 15; google; Pixel 9; Phone)');
+    withTempConfig(() => {
+      const context = new Context({ json: true });
+      expect((context.client as unknown as { mobileUA: string }).mobileUA).toBe(
+        'TAL-Android/4.3.0 (fi.android.takealot; build:800751; 14; samsung; SM-S928B; Phone)',
+      );
+    });
+  });
+
+  it('keeps the stored 4.2.2 UA for existing credentials', () => {
+    withTempConfig(() => {
+      const storedProfile = {
+        androidRelease: '14',
+        brand: 'samsung',
+        model: 'SM-S928B',
+        appVersion: '4.2.2',
+        appBuild: '800750',
+      };
+      saveCredentials({ email: 'a@b.com', password: 'pw', device: { profile: storedProfile } });
+      const context = new Context({ json: true });
+      expect((context.client as unknown as { mobileUA: string }).mobileUA).toBe(
+        'TAL-Android/4.2.2 (fi.android.takealot; build:800750; 14; samsung; SM-S928B; Phone)',
+      );
+    });
   });
 });
 
