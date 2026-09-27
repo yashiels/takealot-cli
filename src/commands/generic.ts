@@ -15,6 +15,45 @@ import { confirm } from '../lib/prompt.js';
 import { loadFormCache, saveFormCache } from '../lib/config.js';
 import { GATE_EXEMPT_MUTATIONS } from '../lib/catalogue.js';
 import { UsageError } from '../lib/errors.js';
+import { ApiError } from '../lib/api-client.js';
+
+const NOT_SUBSCRIBED = /no active subscription|not subscribed/i;
+
+const CONDITIONAL_READ_ERRORS: Record<string, { status: number; match: RegExp; message: string }> = {
+  'plus.cancel.form': { status: 404, match: NOT_SUBSCRIBED, message: 'Takealot Plus cancellation requires an active subscription' },
+  'plus.claimDiscount.form': { status: 400, match: NOT_SUBSCRIBED, message: 'Takealot Plus discount claims require an active eligible subscription' },
+  'plus.manage.plan': { status: 400, match: NOT_SUBSCRIBED, message: 'Takealot Plus plan management requires an active subscription' },
+};
+
+const notificationText = (body: unknown): string => {
+  const notifications = (body as { notifications?: unknown })?.notifications;
+  if (!Array.isArray(notifications)) return '';
+  return notifications
+    .map((notification) => (notification as { description?: unknown })?.description)
+    .filter((description): description is string => typeof description === 'string')
+    .join(' ');
+};
+
+async function callReadable(
+  ctx: Context,
+  id: string,
+  args: Parameters<Context['client']['call']>[1],
+): Promise<unknown> {
+  try {
+    return await ctx.client.call(id, args);
+  } catch (error) {
+    const known = CONDITIONAL_READ_ERRORS[id];
+    if (
+      known &&
+      error instanceof ApiError &&
+      error.info.status === known.status &&
+      known.match.test(notificationText(error.info.body))
+    ) {
+      throw new UsageError(known.message, 'unavailable_state');
+    }
+    throw error;
+  }
+}
 
 export const SECURITY_WRITES = new Set([
   'account.password.set',
@@ -84,7 +123,7 @@ export async function readEndpoint(
   flags: CommonFlags = {},
 ): Promise<void> {
   await ctx.ensureCredentials().catch(() => undefined); // authed calls need creds; reads on public don't
-  const data = await ctx.client.call(id, args);
+  const data = await callReadable(ctx, id, args);
   emit(ctx, data, flags.unsafeRaw);
 }
 
@@ -126,7 +165,7 @@ export async function fetchForm(
   flags: CommonFlags = {},
 ): Promise<void> {
   await ctx.ensureCredentials();
-  const layout = await ctx.client.call(id, args);
+  const layout = await callReadable(ctx, id, args);
   saveFormCache(ctx.accountHash(), flow, layout);
   ctx.logger.info(c.dim(`form cached — fill it and run the matching \`submit --file <json>\``));
   emit(ctx, layout, flags.unsafeRaw);

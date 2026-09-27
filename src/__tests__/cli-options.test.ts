@@ -132,7 +132,7 @@ describe('misplaced ancestor options', () => {
 
 describe('parent and subcommand option collisions', () => {
   it('discovers every current collision without a hand-maintained command list', () => {
-    expect(collisions).toHaveLength(37);
+    expect(collisions).toHaveLength(38);
     expect(collisions.map((collision) => collision.pathLabel)).toEqual(
       expect.arrayContaining(['wishlist add', 'wishlist move', 'wishlist rm-items']),
     );

@@ -55,6 +55,12 @@ const intOpt = (name: string) => (v: string) => {
   return n;
 };
 
+const idOpt = (name: string) => (v: string) => {
+  const n = /^\d+$/.test(v) ? Number(v) : NaN;
+  if (!Number.isSafeInteger(n) || n <= 0) throw new UsageError(`invalid ${name}: ${v} (expected a positive integer id)`);
+  return n;
+};
+
 const intListOpt = (name: string) => (value: string, previous: number[] = []) => [
   ...previous,
   intOpt(name)(value),
@@ -240,7 +246,7 @@ confirmOpts(withGlobals(cart.command('add')))
   .description('add an item: --sku <id> (exact), --plid <id> (resolved to sku), or a search query')
   .argument('[item...]', 'search query, optionally prefixed with a quantity (e.g. "3 pencils")')
   .option('--sku <id>', 'add this exact buyable SKU id', intOpt('--sku'))
-  .option('--plid <id>', 'add the buyable SKU for this PLID', intOpt('--plid'))
+  .option('--plid <id>', 'add the buyable SKU for this PLID', idOpt('--plid'))
   .option('--qty <n>', 'quantity (with --sku/--plid)', intOpt('--qty'))
   .action((item: string[], options: any, command: Command) =>
     run(command, (ctx) => cartAdd(ctx, (item ?? []).join(' '), options)),
@@ -303,8 +309,9 @@ const recommend = withGlobals(program.command('recommend'))
   .allowExcessArguments(false)
   .argument('[location]', 'recommendation location', 'home-page')
   .option('--model <key>', 'recommendation model key')
+  .option('--plid <id>', 'product PLID for pdp recommendations', idOpt('--plid'))
   .option('--limit <n>', 'max products to show', intOpt('--limit'), 10)
-  .action((location: string, options: { model?: string; limit: number }, command: Command) =>
+  .action((location: string, options: { model?: string; limit: number; plid?: number }, command: Command) =>
     run(command, (ctx) => recommendCommand(ctx, location, options)),
   );
 
@@ -312,8 +319,13 @@ withGlobals(recommend.command('layout'))
   .description('list recommendation model keys')
   .allowExcessArguments(false)
   .option('--location <location>', 'recommendation location', 'home-page')
+  .option('--plid <id>', 'product PLID for pdp recommendations', idOpt('--plid'))
   .action((options: { location: string }, command: Command) =>
-    run(command, (ctx) => recommendLayout(ctx, options.location)),
+    run(command, (ctx) =>
+      recommendLayout(ctx, options.location, {
+        plid: command.optsWithGlobals().plid as number | undefined,
+      }),
+    ),
   );
 
 // ---- checkout ----
@@ -430,7 +442,7 @@ confirmOpts(withGlobals(wishlist.command('add')))
   .argument('[target]', 'wishlist group id, or literal "group" for the legacy form')
   .argument('[groupId]', 'wishlist group id after literal "group"')
   .option('--sku <id>', 'buyable SKU id (repeatable)', intListOpt('--sku'))
-  .option('--plid <id>', 'resolve a single-variant PLID to its buyable SKU', intOpt('--plid'))
+  .option('--plid <id>', 'resolve a single-variant PLID to its buyable SKU', idOpt('--plid'))
   .option('--file <path>', 'JSON payload (or - for stdin)')
   .option('--unsafe-raw', 'print unredacted JSON (leaks secrets)')
   .action((target: string | undefined, groupId: string | undefined, options: any, command: Command) =>

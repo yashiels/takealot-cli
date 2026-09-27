@@ -48,6 +48,10 @@ function pathParams(row: EndpointRow): string[] {
 
 const sameParams = (a: string[], b: string[]): boolean => a.length === b.length && a.every((x, i) => x === b[i]);
 
+function commandParams(row: EndpointRow): string[] {
+  return [...pathParams(row), ...(row.argument ? [`${row.argument.name}:${row.argument.query}`] : [])];
+}
+
 /** Split a command string into { words, flag } — a single `--flag` variant selector. */
 function parseCommand(cmd: string): { words: string[]; flag?: string } {
   const parts = cmd.split(/\s+/).filter(Boolean);
@@ -73,7 +77,7 @@ export function registerCatalogue(
     if (row.excluded || !row.command || BESPOKE_IDS.has(row.id)) continue;
     const { words, flag } = parseCommand(row.command);
     if (BESPOKE_FIRST.has(words[0]!)) continue;
-    if (!flag) baseParams.set(words.join(' '), pathParams(row));
+    if (!flag) baseParams.set(words.join(' '), commandParams(row));
   }
 
   // Pass 2: group rows. A flag variant folds into the base ONLY when its path
@@ -87,7 +91,7 @@ export function registerCatalogue(
     if (BESPOKE_FIRST.has(words[0]!)) continue;
     if (flag) {
       const bp = baseParams.get(words.join(' '));
-      if (!bp || !sameParams(bp, pathParams(row))) {
+      if (!bp || !sameParams(bp, commandParams(row))) {
         // divergent params (or no base) → make the flag a real subcommand word
         words = [...words, flag];
         flag = undefined;
@@ -140,6 +144,7 @@ function wireGroup(
 
   const row = g.base;
   const params = pathParams(row);
+  const argument = row.argument;
   const isForm = row.command!.endsWith(' form') || row.command === 'form';
   const isSubmit = row.command!.endsWith(' submit');
   const anyMutating = [row, ...g.variants.map((v) => v.row)].some((rr) => rr.mutating && !GATE_EXEMPT_MUTATIONS.has(rr.id));
@@ -150,6 +155,7 @@ function wireGroup(
     const displayParam = p === 'obfuscatedOrderId' ? 'orderId' : p;
     cmd = cmd.argument(`<${displayParam}>`, `${displayParam} path parameter`);
   }
+  if (argument) cmd = cmd.argument(`<${argument.name}>`, `${argument.name} query parameter`);
   cmd = cmd.option('--unsafe-raw', 'print unredacted JSON (leaks secrets)');
   if (!isForm) cmd = cmd.option('--query <k=v...>', 'query parameter (repeatable)', kv);
   if (isSubmit || (anyMutating && !isForm)) {
@@ -164,7 +170,7 @@ function wireGroup(
   cmd.action((...args: unknown[]) => {
     const command = args[args.length - 1] as Command;
     const options = args[args.length - 2] as Record<string, unknown>;
-    const positionals = args.slice(0, params.length) as string[];
+    const positionals = args.slice(0, params.length + (argument ? 1 : 0)) as string[];
     run(command, async (ctx) => {
       // Resolve which endpoint id (flag variant or base).
       let chosen = row;
@@ -175,7 +181,12 @@ function wireGroup(
       if (chosen.domain === 'invoices' && paramObj.obfuscatedOrderId !== undefined) {
         paramObj.obfuscatedOrderId = await ctx.client.resolveObfuscatedOrderId(String(paramObj.obfuscatedOrderId));
       }
-      const query = (options.query as Record<string, string>) ?? undefined;
+      const query: Record<string, unknown> = {
+        ...(chosen.defaultQuery ?? {}),
+        ...((options.query as Record<string, string>) ?? {}),
+      };
+      if (chosen.argument) query[chosen.argument.query] = positionals[params.length]!;
+      const requestQuery = Object.keys(query).length ? query : undefined;
       const flags: CommonFlags = {
         unsafeRaw: Boolean(options.unsafeRaw),
         confirm: Boolean(options.confirm),
@@ -186,7 +197,7 @@ function wireGroup(
 
       const flow = g.words.slice(0, isForm ? -1 : isSubmit ? -1 : g.words.length).join(' ');
       if (isForm) {
-        await fetchForm(ctx, flow, chosen.id, { params: paramObj, query }, flags);
+        await fetchForm(ctx, flow, chosen.id, { params: paramObj, query: requestQuery }, flags);
       } else if (isSubmit) {
         await submitForm(ctx, flow, chosen.id, { params: paramObj }, flags);
       } else if (chosen.mutating && !GATE_EXEMPT_MUTATIONS.has(chosen.id)) {
@@ -194,14 +205,14 @@ function wireGroup(
         await mutateEndpoint(
           ctx,
           chosen.id,
-          { params: paramObj, query, body: flags.file ? readBodyFromFlags(flags) : body },
+          { params: paramObj, query: requestQuery, body: flags.file ? readBodyFromFlags(flags) : body },
           flags,
         );
       } else if (chosen.mutating) {
         // gate-exempt write (e.g. chatbot) — send straight through
-        await mutateEndpoint(ctx, chosen.id, { params: paramObj, query, body: readBodyFromFlags(flags) ?? {} }, flags);
+        await mutateEndpoint(ctx, chosen.id, { params: paramObj, query: requestQuery, body: readBodyFromFlags(flags) ?? {} }, flags);
       } else {
-        await readEndpoint(ctx, chosen.id, { params: paramObj, query }, flags);
+        await readEndpoint(ctx, chosen.id, { params: paramObj, query: requestQuery }, flags);
       }
     });
   });

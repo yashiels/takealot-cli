@@ -96,6 +96,7 @@ describe('endpoint catalogue — contract (every non-excluded row issues the exa
 
       const headers = (init.headers ?? {}) as Record<string, string>;
       const lower = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
+      if (row.base === 'mobile') expect(lower['x-tal-platform']).toBe('android');
       // Auth presence: authed rows carry a bearer; public/absolute rows do not.
       if (row.auth) expect(lower['authorization']).toBe('Bearer test-jwt');
       else expect(lower['authorization']).toBeUndefined();

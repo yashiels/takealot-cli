@@ -76,6 +76,14 @@ describe('takealot-cli smoke tests', () => {
     expect(remove).toContain('--tsin <id>');
   });
 
+  it('requires positional CMS route and help search values', () => {
+    const cms = execFileSync('node', [cli, 'cms', 'route', '--help'], { encoding: 'utf8' });
+    const help = execFileSync('node', [cli, 'help', 'search', '--help'], { encoding: 'utf8' });
+    expect(cms).toContain('<link>');
+    expect(help).toContain('<query>');
+    expect(help).toContain('--autocomplete');
+  });
+
   it.skipIf(isCI)('should search without auth (live API)', () => {
     const out = execFileSync('node', [cli, 'search', 'test', '--limit', '1', '--json'], {
       encoding: 'utf8',
