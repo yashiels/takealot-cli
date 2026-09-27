@@ -1,213 +1,112 @@
 ---
 name: takealot
-description: Use when shopping or managing a Takealot account from the terminal. Search, browse, cart, preview checkout, orders, tracking, invoices, returns, wishlist, credits, Plus, cards, and account operations through a headless API CLI with device-trust auth, JSON output, and dry-run writes; order placement and payment are blocked.
+description: "Use when an agent must shop on Takealot.com or work with a Takealot account from the terminal. It covers search, prices, reviews, the cart, the checkout preview and wishlists. It also covers orders, tracking, invoices, returns, credits, cards, addresses and account data. The takealot CLI uses the Takealot mobile API, gives JSON output and makes every write a dry run first. It cannot place orders or pay. Use it also for short asks such as 'add this to my Takealot cart', 'what did I order' or 'is this in stock'. Use it for a pasted takealot.com link."
 ---
 
-# takealot skill
+# takealot
 
-Use `takealot` for Takealot catalogue and account work without a browser. The agent has broad account access, but the CLI cannot place orders or pay. Hand the owner the checkout preview and tell him to pay in the Takealot app.
+`takealot` is a headless CLI for the Takealot mobile API. The agent can read and change most of the account. The CLI cannot place an order or pay. The owner pays in the Takealot app.
 
-## Install
+Install: `brew install yashiels/tap/takealot`. This skill describes version 0.7.2 or later. Run `takealot --version` to see the version.
 
-```bash
-brew install yashiels/tap/takealot
-```
+## Safety contract
 
-Every data command supports `--json`. Prefer JSON when selecting products or passing results between tools.
+These rules come from the CLI. Plan every task around them.
 
-## Authentication
+1. The CLI blocks every order-placement, payment, 3DS, eBucks and Plus payment endpoint at the transport layer. No flag or file removes this block.
+2. Every write is a dry run until you add `--confirm`. The dry run prints the exact request. Read it before you add `--confirm`.
+3. `--yes` skips the terminal prompt only. It does not give permission. Permission comes from the owner (see Write policy).
+4. `checkout` is a preview. `checkout --confirm` exits 4.
+5. The CLI redacts secrets in its output. `cards` never shows card references, also with `--unsafe-raw`.
 
-Credentials, rotating tokens, and the device record are stored in `~/.config/takealot-cli/credentials.json` with mode `0600`. Tokens refresh automatically. The CLI replays Takealot's server-assigned `did` as the `TAL-Did` header and `did` cookie on authenticated requests.
+## Core workflow: build a basket
 
-Complete 2FA once with device trust enabled. Later logins, including full re-login after token expiry, normally skip OTP while the stored device identity remains trusted.
-
-For unattended use, inject credentials through the environment:
-
-```bash
-TAKEALOT_EMAIL="$(op-sa read op://Agents/takealot/username)" \
-TAKEALOT_PASSWORD="$(op-sa read op://Agents/takealot/password)" \
-  takealot cart --json
-```
-
-For a first-time or untrusted device, use the two-step OTP flow:
-
-1. Trigger the challenge:
+1. Find the product. Add `--json` to every command whose output you parse.
 
    ```bash
-   takealot login --json
-   # {"status":"otp_required","challenge":"<nonce>","otpSentTo":"…","expiresInSec":300}
+   takealot search "hb pencils" --limit 5 --json
+   takealot info <plid> --json
    ```
 
-2. Ask the owner for the code, then submit it with the returned challenge:
+   `info` returns `skuId` and `price`. If the listing has variants, `skuId` is null and `variants` lists the choices. Pick the correct variant. Do not guess.
+
+2. Add the SKU. Do a dry run first, then confirm.
 
    ```bash
-   TAKEALOT_OTP=123456 TAKEALOT_CHALLENGE=<nonce> takealot login --json
+   takealot cart add --sku <skuId> --qty 1 --json
+   takealot cart add --sku <skuId> --qty 1 --confirm --yes --json
    ```
 
-The CLI carries the first response's `__cf_bm` cookie into the OTP request. Prefer environment variables because `--otp` and `--challenge` can remain in process listings or shell history.
+   Use `--plid <plid>` only for a listing with one variant. The CLI rejects a listing with more than one variant (exit 4).
 
-JSON auth errors include `otp_required`, `otp_state_mismatch`, and `otp_expired`. Re-run the first login step after expiry. Never run `login --reset` unattended because it needs credential input. Use separate `XDG_CONFIG_HOME` directories for different accounts on one machine.
+3. Read the cart and the checkout preview.
 
-New credentials use Android app 4.3.0, build 800751. Existing credentials keep their persisted device profile to avoid de-trusting the device. To adopt the current default deliberately, delete only `device.profile` from the stored credentials.
+   ```bash
+   takealot cart --json
+   takealot checkout --json
+   ```
 
-## Core workflow
+4. Give the owner the items, `total`, `amountDue` and `sectionsIncomplete`. Tell him to pay in the Takealot app.
 
-1. Search or inspect a listing.
-2. Add a buyable SKU to the cart.
-3. Read the cart and checkout preview.
-4. Give the preview to the owner and tell him to pay in the Takealot app.
+The owner uses the same cart for other shopping. Save `takealot cart --json` before a cart write. Compare it after the write.
 
-```bash
-takealot search "coffee beans" --limit 5 --json
-takealot info 52341565 --json
-takealot cart add --plid 52341565
-takealot cart --json
-takealot checkout --json
-```
+## Cart changes that remove or change lines
 
-`cart add --plid` resolves product detail to its buyable SKU before printing the dry run. A multi-variant listing without a single SKU is rejected with the available variants; choose the correct variant rather than guessing. Use `--sku` when the exact buyable id is already known.
+`cart remove <sku>` and `cart set-qty <sku> <n>` read the cart before and after the write.
 
-`checkout` is read-only. It returns items, subtotal, discounts, credits, total, `amountDue`, shipping method, `sectionsIncomplete`, and `payInApp: true`. It never places the order. Order-completion and payment endpoints are blocked at the transport boundary.
+- If the SKU is not in the cart, the command exits 4 and sends nothing.
+- If a different line disappears or changes quantity, the command exits 1. The JSON output then has `unexpectedRemovals` and a restore command for each line.
+- The command never restores lines. Run the printed restore commands yourself after you read the cart.
 
-## Commands
+## Wishlists
 
-### Search and product detail
+Always give the list id to a typed add. Get the ids from `takealot wishlist list --json`.
 
 ```bash
-takealot search <query> [--limit <n>] [--json]
-takealot autocomplete --query query=<text>
-takealot trending
-takealot deals
-takealot info <plid> [--credit-options] [--bundle <ids>] [--card] [--reviews]
-takealot reviews <plid> [--page <n>] [--sort <key>]
+takealot wishlist add <groupId> --sku <skuId> --confirm --yes
+takealot wishlist move --from <groupId> --to <groupId> --tsin <tsin> --confirm --yes
+takealot wishlist rm-items <groupId> --tsin <tsin> --confirm --yes
 ```
 
-### Recommendations
-
-```bash
-takealot recommend layout [--location home-page]
-takealot recommend <location> --model <key> [--limit 10]
-takealot recommend layout --location pdp --plid <plid>
-takealot recommend pdp --plid <plid> --model <key> [--limit 10]
-takealot buy-again
-```
-
-Run `recommend layout` first to obtain model keys. Supported locations are `home-page`, `add-to-cart`, `landing-page`, `domain`, and `pdp`. `pdp` needs `--plid` (sent as `context=PLID:<n>`); take the model key from `recommend layout --location pdp --plid <plid>`.
-
-### Cart
-
-```bash
-takealot cart
-takealot cart add "3 pencils"
-takealot cart add --sku <id> --qty <n>
-takealot cart add --plid <id> --qty <n>
-takealot cart set-qty <sku> <n>
-takealot cart remove <sku>
-takealot cart basket "milk; bread; eggs"
-takealot cart clear
-```
-
-Writes are dry runs without `--confirm`. `cart remove` and `cart set-qty` refuse a SKU that is not in the cart (exit 4), read the cart before and after the write, and exit 1 with `unexpectedRemovals` plus restore commands if any other line disappeared or changed quantity. They never restore automatically; run the printed commands only after checking. Text search uses the preference engine: exact prior purchase, prior brand in category, configured preferred brand, then title similarity.
-
-### Checkout, cards, and credits
-
-```bash
-takealot checkout
-takealot checkout start [--file <json>]
-takealot checkout submit --file <json>
-takealot cards
-takealot cards rm --last4 <dddd>
-takealot credits
-```
-
-`checkout start` and `checkout submit` can update checkout delivery or pickup selections; they are dry-run writes and do not place an order. `cards` returns bank, scheme, last four digits, expiry, selected state, and enabled state. It never returns card references, including with `--unsafe-raw`. Card removal resolves the hidden reference from `--last4` and requires exactly one match.
-
-### Orders and invoices
-
-```bash
-takealot orders [--limit <n>]
-takealot orders show <id>
-takealot orders track <id>
-takealot invoices <orderId>
-takealot invoices pdf <orderId> <invoiceId>
-takealot invoices creditnote-pdf <orderId> <creditnoteId>
-```
-
-Invoice commands accept the numeric id printed by `orders`. The CLI searches order history and resolves it to `obfuscated_order_id` before calling invoice, credit-note, request, or business-detail paths.
-
-### Wishlists
-
-```bash
-takealot wishlist list
-takealot wishlist items <groupId>
-takealot wishlist add <groupId> --sku <id> [--sku <id> ...]
-takealot wishlist add <groupId> --plid <plid>
-takealot wishlist move --from <groupId> --to <groupId> --tsin <tsin> [--tsin <tsin> ...]
-takealot wishlist rm-items <groupId> --tsin <tsin> [--tsin <tsin> ...]
-```
-
-Always pass the group id to typed adds; the CLI refuses to guess. `wishlist add --file <json>` without a group writes to whichever list the account used last, so avoid it. Moves and removals are keyed by TSIN, read from `wishlist items <groupId> --json`. Ids are validated before sending (positive integers, SKU/TSIN/PLID of at least 4 digits). The legacy `wishlist add group <groupId> --file <json>` form still works.
-
-### Help
-
-```bash
-takealot help search "<query>" [--autocomplete]
-takealot help context <slug>
-```
-
-### Full account surface
-
-The catalogue also exposes addresses and pickup points, returns and refunds, wishlists, credits and vouchers, Takealot Plus non-payment operations, account and security, personal reviews, and help/chat. Run `takealot --help` and group-level `--help` for the generated commands.
-
-Takealot Plus reads (`plus cancel form`, `plus claim-discount form`, `plus manage plan`) exit 4 with code `unavailable_state` when the account has no active subscription. That is the expected answer for a non-subscriber, not a CLI fault.
-
-Some writes use a server-provided form followed by a submit:
-
-```bash
-takealot account password form
-takealot account password submit --file filled.json --confirm --i-know
-```
-
-The CLI caches the fetched form and rejects foreign or stale section and field ids. Use `--file -` for stdin.
+Moves and removals use the TSIN. Get it from `takealot wishlist items <groupId> --json`. Do not use `wishlist add --file` without a list id. That form writes to the list the account used last, and that list can be a different list.
 
 ## Write policy
 
-- State-changing commands are dry runs by default. Add `--confirm` to write and `--yes` to skip a TTY confirmation.
-- Password, email, mobile, 2FA-disable, and trusted-device removal writes require `--i-know` together with `--confirm`.
-- The CLI cannot place orders or pay. Hand the owner the checkout preview and tell him to pay in the app.
-- Payment, order-completion, 3DS, eBucks payment, and Takealot Plus payment or plan-change paths are blocked even if called indirectly.
+Every `--confirm` needs a clear yes from the owner for that specific action. There are two exceptions:
 
-### Writes that need the owner's explicit OK
+- Reads and dry runs (no `--confirm`).
+- Cart and wishlist changes that the owner asked for while you build a basket: `cart add`, `cart set-qty`, `cart remove`, `cart basket`, wishlist add and wishlist remove. A wishlist move is not in this exception.
 
-Default rule: every `--confirm` needs an explicit yes from the owner for that specific action. This includes anything not listed below as an exception, for example `address use`, `checkout submit`/`start`, `credits redeem`, help-chat messages, account-security changes, card removal, order cancel/reschedule, returns and refunds, address writes, Plus changes, invoice business details, and review writes. `--i-know` is a safety acknowledgement, not authorization.
+`cart clear` needs a yes when the cart holds items that the owner did not ask for. Password, email and mobile writes, 2FA disable and trusted-device removal also need `--i-know` with `--confirm`. `--i-know` is a safety step, not permission.
 
-Exceptions (no per-action OK needed):
+Writes that need a yes include:
 
-- Cart and wishlist changes the owner asked for while building a basket (`cart add`, `cart set-qty`, `cart remove`, `cart basket`, wishlist add/remove). `cart clear` still needs an OK when the cart holds items the owner did not ask for.
-- Read commands and dry runs (no `--confirm`).
+- address changes, `checkout start` and `checkout submit`
+- `credits redeem` and card removal
+- order cancel or reschedule, returns and refunds
+- wishlist moves, Plus changes and invoice business details
+- review writes and help-chat messages
 
 ## Output contract
 
-JSON failures are written to stdout:
+Errors print JSON to stdout when you use `--json`:
 
 ```json
-{
-  "error": "message",
-  "code": "stable_error_code",
-  "status": 400,
-  "method": "POST",
-  "path": "/rest/v-1-18-0/customers/<id>/cart/items",
-  "details": { "message": "...", "errors": [{ "field": "...", "message": "..." }] }
-}
+{ "error": "message", "code": "stable_error_code", "status": 400, "method": "POST", "path": "/rest/v-1-18-0/...", "details": {} }
 ```
 
-`status`, `method`, `path`, and `details` appear on API errors. `details` is an allowlist of the server's message, code, and field errors with emails and long digit runs masked. `--verbose` also logs each failing request line.
+`status`, `method`, `path` and `details` appear on API errors only. `details` contains the server message, code and field errors. The CLI masks email addresses and long numbers in it.
 
-| Exit | Meaning                                          |
-| ---- | ------------------------------------------------ |
-| `0`  | Success or dry run                               |
-| `1`  | Runtime or API failure                           |
-| `3`  | Authentication or OTP failure                    |
-| `4`  | Invalid usage or blocked order/payment operation |
+```text
+exit 0  success or dry run
+exit 1  runtime or API failure
+exit 3  authentication or OTP failure
+exit 4  usage error, blocked action, or a state that makes the request impossible
+```
 
-Output is recursively redacted. `--unsafe-raw` is only for deliberate debugging and never reveals card references through `cards`.
+Code `unavailable_state` (exit 4) tells you that the account state blocks the request. An example is a Plus read on an account without Plus. This result is correct for that account. It is not a CLI fault.
+
+## References
+
+- See `references/commands.md` for all command groups: product, recommendations, cart, checkout, orders, invoices, returns, wishlists, account, Plus, help.
+- See `references/auth.md` for login, the OTP flow, unattended credentials and the device profile.
