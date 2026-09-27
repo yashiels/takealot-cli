@@ -6,9 +6,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/v/release/yashiels/takealot-cli)](https://github.com/yashiels/takealot-cli/releases/latest)
 
-Search and browse, manage a cart and account, preview checkout, read orders and invoices, handle returns, and use the rest of Takealot's non-payment app surface from the command line. The CLI talks directly to the Android mobile API. It has no browser dependency.
+Search the store, manage a cart and an account, and preview checkout from the command line. Read orders and invoices, handle returns and use the rest of the Takealot app that does not involve payment. The CLI talks directly to the Android mobile API. It has no browser dependency.
 
-The agent can use the full account surface exposed by the CLI, but it cannot place orders or pay. `checkout` is a read-only preview of the amount due and incomplete sections. Give that preview to the account owner, who completes payment in the Takealot app.
+An agent can use every account feature that the CLI exposes, but it cannot place orders or pay. `checkout` is a read-only preview of the amount due and the incomplete sections. Give that preview to the account owner, who pays in the Takealot app.
 
 Every data command supports `--json`.
 
@@ -20,9 +20,9 @@ Every data command supports `--json`.
 brew install yashiels/tap/takealot
 ```
 
-Or download a standalone binary from the [latest release](https://github.com/yashiels/takealot-cli/releases/latest).
+You can also download a standalone binary from the [latest release](https://github.com/yashiels/takealot-cli/releases/latest).
 
-Build from source with Node 18 or later:
+To build from source, use Node 18 or later:
 
 ```bash
 git clone https://github.com/yashiels/takealot-cli.git
@@ -43,13 +43,13 @@ takealot cart
 takealot checkout
 ```
 
-`cart add --plid` fetches product detail and resolves the listing to a buyable SKU even during a dry run. If the listing has variants and no single SKU, it asks you to choose a variant instead of guessing.
+`cart add --plid` reads the product detail and finds the buyable SKU, also during a dry run. If the listing has variants and no single SKU, the command asks you to choose a variant. It does not guess.
 
 ## Authentication and device trust
 
-Credentials and tokens are cached automatically. The CLI persists Takealot's server-assigned device id (`did`) with the Android profile and replays it on every authenticated request. Once 2FA succeeds with device trust enabled, later logins normally skip the OTP.
+The CLI saves credentials and tokens automatically. It stores the device id (`did`) that Takealot gives, together with the Android profile. When it has a `did`, it sends it on every authenticated request. After one 2FA login with device trust, later logins normally skip the OTP.
 
-Environment credentials override the stored pair:
+Credentials in the environment take priority over the stored pair:
 
 ```bash
 TAKEALOT_EMAIL="$(op-sa read op://Agents/takealot/username)" \
@@ -57,7 +57,7 @@ TAKEALOT_PASSWORD="$(op-sa read op://Agents/takealot/password)" \
   takealot cart --json
 ```
 
-An untrusted device uses a two-step, non-interactive OTP flow:
+A device that Takealot does not trust uses a two-step OTP flow with no prompts:
 
 ```bash
 takealot login --json
@@ -66,13 +66,13 @@ takealot login --json
 TAKEALOT_OTP=123456 TAKEALOT_CHALLENGE=<nonce> takealot login --json
 ```
 
-The second request reuses the `__cf_bm` cookie from the challenge response. Prefer the environment variables because command-line OTP flags can leak through shell history or the process list. Do not run `login --reset` unattended; it requires credential input.
+The second request sends the `__cf_bm` cookie from the challenge response again. Use the environment variables, because OTP flags on the command line can stay in shell history or the process list. Do not run `login --reset` without a person at the terminal. It asks for the email and password.
 
-The default profile for new credentials is Takealot Android 4.3.0, build 800751. An existing `credentials.json` keeps its stored device profile so its trusted-device identity does not change. Delete only the stored `device.profile` field if you deliberately want the current default recreated.
+New credentials use the profile of Takealot Android 4.3.0, build 800751. An existing `credentials.json` keeps its stored device profile, so its trusted device identity does not change. To make the CLI create the current default, delete only the stored `device.profile` field.
 
 ## Command overview
 
-All data commands accept `--json`. Use `--help` on a command group for its full generated surface.
+All data commands accept `--json`. Use `--help` on a command group to see all its commands.
 
 | Area | Commands |
 |------|----------|
@@ -80,39 +80,44 @@ All data commands accept `--json`. Use `--help` on a command group for its full 
 | Reviews | `reviews <plid> [--page <n>] [--sort <key>]` · `myreviews …` |
 | Recommend | `recommend layout [--location <location>] [--plid <id>]` · `recommend <location> --model <key> [--plid <id>] [--limit 10]` · `buy-again` |
 | Cart | `cart` · `cart add <query>` · `cart add --sku <id>` · `cart add --plid <id>` · `cart set-qty` · `cart remove` · `cart basket` · `cart clear` |
-| Checkout | `checkout` (read-only preview) · `checkout start` · `checkout submit --file <json>` for delivery or pickup selections |
-| Cards and credits | `cards` (never exposes card references) · `cards rm --last4 <dddd>` · `credits …` |
-| Orders | `orders` · `orders show <id>` · tracking/cancellation/rescheduling commands · `invoices <orderId>` and its PDF, request, credit-note, and business-detail variants |
-| Account | addresses, returns, refunds, wishlist, Plus, account/security, help/chat, config, and preferences command groups |
+| Checkout | `checkout` (read-only preview) · `checkout start` · `checkout submit --file <json>` for delivery or pickup choices |
+| Wishlists | `wishlist list` · `wishlist items <groupId>` · `wishlist add <groupId> --sku <id>` · `wishlist move --from <id> --to <id> --tsin <id>` · `wishlist rm-items <groupId> --tsin <id>` |
+| Cards and credits | `cards` (never shows card references) · `cards rm --last4 <dddd>` · `credits …` |
+| Orders | `orders` · `orders show <id>` · tracking, cancel and reschedule commands · `invoices <orderId>` with its PDF, request, credit-note and business-detail commands |
+| Account | addresses, returns, refunds, Plus, account and security, help and chat, config, and preferences |
 
-`recommend layout` returns model keys for `recommend <location> --model`. The supported locations are `home-page`, `pdp`, `add-to-cart`, `landing-page`, and `domain`. PDP requests require the product context: `recommend layout --location pdp --plid <id>`, then `recommend pdp --plid <id> --model <key>`.
+`recommend layout` returns the model keys for `recommend <location> --model`. The locations are `home-page`, `pdp`, `add-to-cart`, `landing-page` and `domain`. A PDP request needs the product. Run `recommend layout --location pdp --plid <id>`, then `recommend pdp --plid <id> --model <key>`.
 
-`invoices <orderId>` accepts the numeric order id shown by `orders`; the CLI resolves it to Takealot's obfuscated order id before calling invoice endpoints.
+`invoices <orderId>` accepts the order number that `orders` shows. The CLI finds Takealot's internal order id before it calls the invoice endpoints.
+
+`cart remove` and `cart set-qty` read the cart before and after the write. If a different line disappears or changes quantity, the command exits 1 and prints a restore command for each line.
 
 ### Writes and account-security changes
 
-State-changing commands are dry runs unless you pass `--confirm`. Add `--yes` to skip an interactive confirmation. Agents must get the owner's explicit OK for the specific consequential or account-security action before using `--confirm`; `--i-know` is a safety flag, not authorization. Account-security writes that can lock out the owner also require `--i-know`, including password, email, mobile number, 2FA-disable, and trusted-device removal operations.
+A command that changes state is a dry run until you add `--confirm`. Add `--yes` to skip the interactive prompt. An agent must get the owner's clear yes for the specific action before it uses `--confirm`. `--i-know` is a safety flag, not permission.
+
+Account-security writes that can lock out the owner also need `--i-know`. These are password, email, mobile number, 2FA-disable and trusted-device removal operations.
 
 ```bash
-takealot address use A123
-takealot address use A123 --confirm
+takealot address use --file selected.json
+takealot address use --file selected.json --confirm
 takealot account password submit --file filled.json --confirm --i-know
 ```
 
-Some writes use a server-defined form followed by a submit:
+Some writes use a form from the server and then a submit:
 
 ```bash
 takealot account password form
 takealot account password submit --file filled.json --confirm --i-know
 ```
 
-The submit payload is checked against the fetched form before it is sent. Use `--file -` to read JSON from stdin.
+The CLI compares the submit payload with the saved form before it sends the payload. Use `--file -` to read JSON from stdin.
 
 ## Checkout and payment boundary
 
-`takealot checkout` performs a read-only checkout fetch and returns items, subtotal, discounts, credits, total, amount due, shipping method, and `sectionsIncomplete`, with `payInApp: true` in JSON. Human output ends with `Pay in the Takealot app.`
+`takealot checkout` reads the checkout and changes nothing. It returns items, subtotal, discounts, credits, total, amount due, shipping method and `sectionsIncomplete`, with `payInApp: true` in JSON. Human output ends with `Pay in the Takealot app.`
 
-The CLI never creates an order and never pays. Order-completion, card-payment, 3DS, eBucks payment, and Takealot Plus payment or plan-change endpoints are blocked in the API transport. Passing the removed `checkout --confirm` option is refused before a network call.
+The CLI never creates an order and never pays. The API transport blocks order-completion, card-payment, 3DS, eBucks payment, and Takealot Plus payment or plan-change endpoints. `checkout --confirm` exits 4 before any network call.
 
 ## Output and errors
 
@@ -122,42 +127,52 @@ Machine-readable failures use this envelope on stdout:
 {
   "error": "human-readable message",
   "code": "stable_error_code",
-  "status": 400
+  "status": 400,
+  "method": "POST",
+  "path": "/rest/v-1-18-0/customers/<id>/cart/items",
+  "details": { "message": "...", "errors": [{ "field": "...", "message": "..." }] }
 }
 ```
 
-`status` is present when an HTTP status is available.
+`status`, `method`, `path` and `details` appear when the API returned an error. `details` holds only the server message, code and field errors. The CLI masks email addresses and long numbers in it.
 
 | Exit | Meaning |
 |------|---------|
-| `0` | Success, including a dry run |
+| `0` | Success, also a dry run |
 | `1` | Runtime or API failure |
 | `3` | Authentication or OTP failure |
-| `4` | Usage error or blocked order/payment attempt |
+| `4` | Usage error, blocked order or payment attempt, or an account state that makes the request impossible (`unavailable_state`) |
 
 ## Safety
 
-- The transport permits only the exact `https://api.takealot.com` origin and rejects redirects, unsafe URLs, and blocked order/payment paths.
-- Output is recursively redacted by default. `--unsafe-raw` is for debugging, but `cards` still never returns card references.
-- Product listing ids (`PLID`) and buyable SKU ids are distinct; the CLI does not substitute one for the other.
-- No browser, Playwright, or Puppeteer is used.
+- The transport allows only the exact `https://api.takealot.com` origin. It rejects redirects, unsafe URLs, and blocked order and payment paths.
+- The CLI redacts secrets in all output by default. `--unsafe-raw` is for debugging, but `cards` still never returns card references.
+- A product listing id (`PLID`) and a buyable SKU id are different numbers. The CLI does not use one in place of the other.
+- The CLI uses no browser, Playwright or Puppeteer.
 
 ## Configuration
 
-Files live under `~/.config/takealot-cli/`, respecting `$XDG_CONFIG_HOME`:
+Files are in `~/.config/takealot-cli/`, or under `$XDG_CONFIG_HOME` when you set it:
 
 | File | Contents |
 |------|----------|
-| `config.json` | API and user-agent overrides plus preferred brands |
-| `credentials.json` | Email, password, cached tokens, and device record (`did` plus profile), mode `0600` |
-| `preferences.json` | Order-history preference cache |
-| `pending-otp-*.json` | Short-lived OTP challenge state, mode `0600` |
+| `config.json` | API and user-agent overrides, and preferred brands |
+| `credentials.json` | Email, password, tokens, and the device record (`did` and profile), mode `0600` |
+| `preferences.json` | Preference cache built from order history |
+| `pending-otp-*.json` | OTP challenge state, including the `__cf_bm` cookie, until the login completes or expires, mode `0600` |
 
-Writes are atomic and credentials updates are serialized across processes.
+The CLI writes each file in one atomic step. A lock stops two processes from changing the credentials at the same time.
 
 ## Preference engine
 
-Text-based `cart add` ranks exact prior purchases first, then brands bought in the same category, configured preferred brands, and finally title similarity. Seed it after login:
+A text `cart add` ranks the results. The order is:
+
+1. An item that you bought before.
+2. A brand that you bought in the same category.
+3. A preferred brand from `config.json`.
+4. Title similarity.
+
+Build the cache after login:
 
 ```bash
 takealot preferences refresh
@@ -171,12 +186,12 @@ make build
 make test
 ```
 
-Releases are automated by the Ship workflow, which bumps release versions, builds standalone binaries, publishes a GitHub Release, and updates the Homebrew tap.
+The Ship workflow makes each release. It sets the version, builds standalone binaries and tests the binary for its own platform. Then it publishes a GitHub Release and updates the Homebrew tap.
 
 ## Disclaimer
 
-Not affiliated with or endorsed by Takealot.com (Pty) Ltd. This tool calls private, undocumented APIs reverse-engineered from the Takealot Android app; they may change without notice. Use it only on your own account.
+Takealot.com (Pty) Ltd does not endorse this tool, and the project has no link to the company. The tool calls private APIs that are not documented. These APIs come from the Takealot Android app and can change without notice. Use the tool only on your own account.
 
 ## License
 
-MIT — [Yashiel Sookdeo](https://github.com/yashiels)
+MIT, [Yashiel Sookdeo](https://github.com/yashiels)

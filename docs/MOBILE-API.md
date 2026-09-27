@@ -1,19 +1,21 @@
-# Takealot Mobile API Reference (MITM Captured 2026-02-22)
+# Takealot mobile API reference
+
+First captured with a MITM proxy on 2026-02-22. Checked again against the Android app 4.3.0.
 
 Authenticated mobile API: `https://api.takealot.com/rest/v-1-18-0`
 Search API: `https://api.takealot.com/rest/v-1-14-0`
 User-Agent: `TAL-Android/4.3.0 (fi.android.takealot; build:800751; 14; samsung; SM-S928B; Phone)`
-Auth: `Authorization: Bearer {jwt}` + cookies: `taid={id_token}; tal_jwt={jwt}; tal_csrf={csrf_token}; did={did}`
+Auth: the `Authorization` bearer header with the JWT, plus `X-Csrf-Token` and `TAL-Did` when a CSRF token and a `did` exist. Cookies: `tal_jwt={jwt}`, plus `taid={id_token}`, `tal_csrf={csrf_token}` and `did={did}` when those values exist.
 
 ## 4.3.0 notes
 
 App 4.3.0 uses build 800751 and keeps the authenticated API at `v-1-18-0`.
 
-- Public reviews use `product-reviews/plid/{plid}` with the bare numeric PLID plus `page` and optional `sort` query parameters.
+- Public reviews use `product-reviews/plid/{plid}` with the numeric PLID only (no `PLID` prefix). The query takes `page` and an optional `sort`.
 - Recommendations require `model` and `display_type=product`. `recommendations/home-page/layout` returns the model keys to use for home-page recommendations.
-- Invoice, credit-note, and invoice business-detail paths take `obfuscated_order_id`; the CLI resolves a displayed numeric order id through order history first.
-- Product detail reads the buyable from `buybox.items[0]` and falls back to `event_data.documents.product`; multi-variant listings expose choices under `variants.selectors[].options[]` and may have no single SKU.
-- The API contains order-completion and payment paths, but this CLI blocks them at its transport boundary. Checkout is a read-only preview and the account owner pays in the Takealot app.
+- Invoice, credit-note and invoice business-detail paths take `obfuscated_order_id`. The CLI finds it from the order number through the order history first.
+- Product detail reads the buyable item from `buybox.items[0]`, with `event_data.documents.product` as the fallback. A listing with variants shows the choices under `variants.selectors[].options[]`. It can have no single SKU.
+- The API has order-completion and payment paths. This CLI blocks them at its transport boundary. Checkout is a read-only preview, and the account owner pays in the Takealot app.
 
 ## Auth
 
@@ -30,7 +32,7 @@ Content-Type: application/json
 
 ### Login with Two-Step Verification (2FA)
 
-When the account has 2FA enabled, the login flow is two requests:
+When the account has 2FA, the login flow has two requests:
 
 **Request 1 — Submit credentials:**
 
@@ -60,7 +62,7 @@ Content-Type: application/json
 }
 ```
 
-The response also sets a `__cf_bm` Cloudflare cookie that MUST be included in the second request.
+The response also sets a `__cf_bm` Cloudflare cookie. The second request must include this cookie. Between the two requests, the CLI keeps the cookie in the pending-challenge file (mode 0600).
 
 **Request 2 — Submit OTP:**
 
@@ -77,7 +79,7 @@ Cookie: __cf_bm=...
 
 **Response:** Same `auth_info` as non-2FA login.
 
-**Note:** Each credential-only POST to /customers/login initiates a new 2FA challenge. Submit the OTP from the first response's OTP challenge only. The OTP is valid for 5 minutes (`valid_millis: 300000`).
+**Note:** Each POST to /customers/login with credentials only starts a new 2FA challenge. Send the OTP for the challenge that the first response started. The OTP is valid for 5 minutes (`valid_millis: 300000`).
 
 ### Refresh Token
 
@@ -117,11 +119,11 @@ GET /search/trending?platform=android&limit=10
 - Result count is `sections.products.paging.total_num_found` (NOT `sections.products.total`, which does not exist).
 - Each result: `product_views.{core, buybox_summary}`.
   - `core.id` — the **PLID** (used in `/PLID{id}` links and product-card). Build a link as `www.takealot.com/{core.slug}/PLID{core.id}`.
-  - `buybox_summary.product_id` — the **buyable/SKU id** (what add-to-cart wants). It is a _different_ number from `core.id`; `/PLID{buybox.product_id}` 404s.
+  - `buybox_summary.product_id` — the **buyable SKU id** that add-to-cart needs. It is a _different_ number from `core.id`. `/PLID{buybox.product_id}` returns 404.
   - Prices (`buybox_summary.prices[]`, `pretty_price`) are in **Rand**.
-  - `core.reviews` — review count (there is no `core.review_count`). `core.star_rating` — rating.
-  - `buybox_summary.saving` — pre-formatted discount string (e.g. `"23%"`); no `discount_percentage` field exists.
-  - Stock: `product_views.stock_availability_summary.status` / `.is_in_stock`; delivery text at `.estimated_delivery.estimated_dates`.
+  - `core.reviews` — review count. There is no `core.review_count`. `core.star_rating` — rating.
+  - `buybox_summary.saving` — discount as a formatted string (for example `"23%"`). There is no `discount_percentage` field.
+  - Stock: `product_views.stock_availability_summary.status` and `.is_in_stock`. Delivery text: `.estimated_delivery.estimated_dates`.
 
 ## Products
 
@@ -138,7 +140,7 @@ GET /product-details/PLID{plid}?platform=android&show_takealot_now_alt=false&off
 - Fallback fields at `event_data.documents.product.{sku_id, in_stock, purchase_price}`
 - Variant choices at `variants.selectors[].options[]`
 
-Multi-variant listings may not have a single SKU until a variant is chosen; the CLI returns `skuId: null` and exposes the available options instead of guessing.
+A listing with variants can have no single SKU until someone chooses a variant. The CLI then returns `skuId: null` and shows the options. It does not guess.
 
 ### Product Card (lightweight)
 
@@ -167,7 +169,7 @@ GET /customers/{customer_id}/cart
 Authorization: Bearer {jwt}
 ```
 
-**Response:** carries two parallel arrays keyed by `product_id`, and neither alone is sufficient — **join them on `product_id`**:
+**Response:** two parallel arrays, both keyed by `product_id`. One array alone is not sufficient. **Join them on `product_id`**:
 
 - `products[]` — `product_id` (SKU id), `plid` (`"PLID{n}"` string — the real PLID for links), `title`, `selling_price` (unit, in **Rand**), `original_price`.
 - `cart_items[]` — `product_id`, `quantity`, `sub_total` (line total, Rand), `allocations[].unit_price`.
@@ -186,11 +188,11 @@ Authorization: Bearer {jwt}
 
 ### Checkout selections
 
-`POST /checkout/{customer_id}` starts or refreshes checkout state. `PUT /checkout/{customer_id}` submits delivery or pickup selections. Both commands use the normal dry-run/`--confirm` write gate. Neither endpoint places an order.
+`POST /checkout/{customer_id}` starts the checkout state or makes it current again. `PUT /checkout/{customer_id}` sends delivery or pickup choices. Both commands use the normal dry-run and `--confirm` write gate. Neither endpoint places an order.
 
 ### Blocked order and payment paths
 
-Order completion, order payment, payment completion, payhost, eBucks payment, and Takealot Plus payment or plan-change endpoints remain in the catalogue as excluded rows. `PAYMENT_BLOCKED` and the client's `send()` transport guard reject them before a network request. The CLI does not implement payment redirects or 3DS; the account owner pays in the Takealot app.
+Order completion, order payment, payment completion, payhost, eBucks payment, and Takealot Plus payment or plan-change endpoints stay in the catalogue as excluded rows. `PAYMENT_BLOCKED` and the client's `send()` transport guard reject them before a network request. The CLI has no payment redirects and no 3DS. The account owner pays in the Takealot app.
 
 ### Saved cards
 
@@ -210,12 +212,12 @@ GET /customers/{customer_id}/summary
 GET /customer/{customer_id}/orders?period=all&page_number=0
 ```
 
-Also accepts `from`/`to`/`page_size`. Paging is **0-indexed**; iterate `page_number` until `response.orders` is empty.
+The endpoint also accepts `from`, `to` and `page_size`. Paging starts at **0**. Increase `page_number` until `response.orders` is empty.
 
 **Response:** orders are at `response.orders[]`. Each order:
 
 - Money (`total_amount`, `subtotal`, `unit_price`, `line_total`, …) is in **Rand**, not cents.
-- No `status` field — derive from booleans `is_fully_cancelled`, `is_awaiting_payment`, `is_authorized` / `auth_status`.
+- No `status` field. Get the state from the booleans `is_fully_cancelled`, `is_awaiting_payment`, and `is_authorized` or `auth_status`.
 - Line items: `consignments[].order_items[]`, each with `product_id` (SKU id), `unit_price`, `quantity`, and `sku.plid` (`"PLID{n}"` — the real PLID for links).
 
 ### Wishlists
@@ -236,17 +238,18 @@ Wishlist writes use the request DTOs from the Android 4.3.0 app. Group ids, SKU 
 | Move items                            | `PUT /customers/{customer_id}/wishlists/items/move`              | `{"from":2181365,"to":[27948686],"products":[{"tsin":104146086}]}`       |
 | Replace SKU group membership          | `PUT /customers/{customer_id}/wishlists/items/pid/{sku_id}`      | `{"reset":false,"groups":[2181365]}`                                     |
 | Replace TSIN group membership         | `PUT /customers/{customer_id}/wishlists/items/tsin/{tsin_id}`    | `{"reset":false,"groups":[2181365]}`                                     |
-| Remove by SKU                         | `DELETE /customers/{customer_id}/wishlists/items/pid/{sku_id}`   | none                                                                     |
-| Remove by TSIN                        | `DELETE /customers/{customer_id}/wishlists/items/tsin/{tsin_id}` | none                                                                     |
-| Bulk remove                           | `DELETE /customers/{customer_id}/wishlists/{group_id}/items`     | `{"products":[{"tsin":104146086}]}`                                      |
+| Delete by SKU                         | `DELETE /customers/{customer_id}/wishlists/items/pid/{sku_id}`   | none                                                                     |
+| Delete by TSIN                        | `DELETE /customers/{customer_id}/wishlists/items/tsin/{tsin_id}` | none                                                                     |
+| Bulk delete                           | `DELETE /customers/{customer_id}/wishlists/{group_id}/items`     | `{"products":[{"tsin":104146086}]}`                                      |
 | Shared group                          | `GET /customers/wishlists/{shared_group_id}`                     | none                                                                     |
 | Recommendations                       | `GET /recommend/wishlist`                                        | none                                                                     |
 | Recommendations for PLIDs             | `GET /recommend/wishlist/{plids}`                                | none                                                                     |
 
-The web bundle also uses `PUT /customers/{customer_id}/wishlists/items/tsin/{tsin_id}/move` with `{"from":2181365,"to":27948686}`. This endpoint is absent from the Android 4.3.0 Retrofit interface, so the catalogue records it as an excluded web-only row rather than exposing it through the mobile CLI.
+The web bundle also uses `PUT /customers/{customer_id}/wishlists/items/tsin/{tsin_id}/move` with `{"from":2181365,"to":27948686}`. The Android 4.3.0 Retrofit interface does not have this endpoint. The catalogue therefore records it as an excluded web-only row, and the CLI does not expose it.
 
-Typed writes avoid hand-authored payloads: `wishlist add <groupId> --sku N`, `wishlist add <groupId> --plid P`, `wishlist move --from G --to G --tsin N`, and `wishlist rm-items <groupId> --tsin N`. Repeat `--sku` or `--tsin` for multiple products. Each command accepts `--file` as an alternative and uses the normal dry-run/`--confirm` gate.
-For compatibility, `wishlist add --file payload.json` without a group id still targets the last-used group.
+With typed writes, you do not write payloads by hand: `wishlist add <groupId> --sku N`, `wishlist add <groupId> --plid P`, `wishlist move --from G --to G --tsin N`, and `wishlist rm-items <groupId> --tsin N`. Repeat `--sku` or `--tsin` for more products. Each command also accepts `--file` and uses the normal dry-run and `--confirm` gate.
+
+`wishlist add --file payload.json` without a group id still writes to the last-used group, for compatibility.
 
 ### Credits Balance
 
@@ -254,25 +257,35 @@ For compatibility, `wishlist add --file payload.json` without a group id still t
 GET /customers/{customer_id}/credits/balance
 ```
 
-## Key Notes
+## Key notes
 
-0. **All money values are in Rand, not cents** — do not divide by 100. (`unit_price: 102` == R102; cart total `833` == R833.)
-   0b. **Two ids per product** — the **PLID** (`core.id` in search, `plid`/`sku.plid` in cart & orders) is for links and product-card/product-details; the **SKU id** (`buybox_summary.product_id` in search, `buybox.items[0].sku` in product details, and cart/order `product_id`) is for add-to-cart. They are different numbers and are not interchangeable.
-   0c. **Device trust rides on a persistent, server-assigned `did`.** The app has no request signing (the `access_key`/`private_key` in the login response are unused for signing). The one authorization interceptor adds exactly `Authorization: Bearer`, `X-Csrf-Token`, and **`TAL-Did: {did}`** to every authenticated request. The `did` is issued by the server (via `Set-Cookie: did=…`, and echoed in `auth_info.did`), persisted, and sent back — as the `TAL-Did` header **and** the `did` cookie — on **every** request including login and refresh. Completing 2FA once with `trust_this_device:true` marks that `did` trusted, so later logins presenting it **skip the OTP challenge**. The CLI therefore: generates nothing locally; captures the `did` from both `Set-Cookie` and the body (cookie wins on conflict); persists it at device scope (survives a token clear); and replays it on every request. This is what makes headless re-login work without a fresh OTP.
-1. **Authenticated requests use the mobile API and User-Agent; the 2FA handshake requires the \_\_cf_bm cookie returned by the first login response**
-2. **JWT expires in 1 hour** — use refresh_token to get new jwt before expiry
-3. **refresh_token rotates** — each refresh returns a new refresh_token (old one invalidated)
-4. **Order placement and payment are blocked in this CLI** — use the read-only preview, then pay in the Takealot app
+1. **All money values are in Rand, not cents.** Do not divide by 100. (`unit_price: 102` is R102. A cart total of `833` is R833.)
+2. **Each product has two ids.**
+   - The **PLID** is for links, product-card and product-details. It is `core.id` in search, and `plid` or `sku.plid` in the cart and orders.
+   - The **SKU id** is for add-to-cart. It is `buybox_summary.product_id` in search, `buybox.items[0].sku` in product details, and `product_id` in the cart and orders.
+   - The two ids are different numbers. You cannot use one in place of the other.
+3. **Device trust depends on a stored `did` that the server gives.**
+   - The app does not sign requests. The login response contains `access_key` and `private_key`, but the app does not use them for signing.
+   - The app has one authorization interceptor. In the decompiled app, it adds `Authorization`, `X-Csrf-Token` and **`TAL-Did: {did}`** to authenticated requests. The CLI adds `X-Csrf-Token` and `TAL-Did` only when it has a CSRF token and a `did`.
+   - The server gives the `did` in `Set-Cookie: did=…` and also in `auth_info.did`. The app stores it and sends it back on **every** request, also on login and refresh. It sends it as the `TAL-Did` header **and** as the `did` cookie.
+   - One 2FA login with `trust_this_device:true` makes that `did` trusted. Later logins that send it **skip the OTP challenge**.
+   - The CLI does the same:
+     - It makes no `did` itself.
+     - It reads the `did` from `Set-Cookie` and from the body. The cookie wins when the two are different.
+     - It stores the `did` with the device, so the `did` stays when the CLI clears the tokens.
+     - When it has a `did`, it sends the `did` on every request.
+   - This lets a headless login succeed without a new OTP.
+4. **Authenticated requests use the mobile API and the mobile user-agent.** The 2FA step needs the `__cf_bm` cookie from the first login response.
+5. **The JWT expires after 1 hour.** Use the refresh token to get a new JWT before it expires.
+6. **The refresh token changes on every refresh.** Each refresh returns a new refresh token, and the old one stops working.
+7. **This CLI blocks order placement and payment.** Use the read-only preview, then pay in the Takealot app.
 
 ---
 
 ## Full endpoint catalogue
 
-The complete, machine-readable list of every endpoint the app exposes (extracted from APK
-v4.2.2; paths re-checked against the v4.3.0 Retrofit surface, build 800751, API v-1-18-0, and live-verified for the commands exercised in PR2) lives in
-**`docs/endpoints-catalogue.json`** — one row per endpoint with
-`{domain, method, path, auth, encoding, mutating, excluded, command}`. It is the source of truth
-for the CLI's coverage: a contract test drives every non-excluded row and asserts the exact
-request. The catalogue has 198 rows: 170 active command endpoints and 28 excluded rows, including
-22 order/payment paths plus telemetry, ads, internal token refresh, and the documented web-only wishlist move. API base for authenticated
-calls: `v-1-18-0`.
+`docs/endpoints-catalogue.json` lists every endpoint that the app exposes, one row per endpoint, with `{domain, method, path, auth, encoding, mutating, excluded, command}`. The first list came from APK v4.2.2. A second check compared the paths with the v4.3.0 Retrofit interface (build 800751, API `v-1-18-0`). The commands used in PR2 were also checked against the live API.
+
+The catalogue is the source of truth for what the CLI covers. A contract test runs every row that is not excluded and checks the exact request.
+
+The catalogue has 198 rows: 170 command endpoints and 28 excluded rows. The excluded rows are 22 order and payment paths, telemetry, ads, the internal token refresh, and the web-only wishlist move. The API base for authenticated calls is `v-1-18-0`.
