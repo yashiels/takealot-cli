@@ -13,7 +13,7 @@ import { pathToFileURL } from 'node:url';
 import { Context, OtpFlowError, type GlobalOptions } from './lib/context.js';
 import { ApiError } from './lib/api-client.js';
 import { isAuthFailure } from './lib/auth.js';
-import { ServalError, UsageError } from './lib/errors.js';
+import { ServalError, UsageError, WatchError } from './lib/errors.js';
 import { redactText } from './lib/redact.js';
 import { c } from './lib/ui.js';
 import { searchCommand } from './commands/search.js';
@@ -31,6 +31,12 @@ import { registerCatalogue } from './commands/register.js';
 import { mutateEndpoint, readBodyFromFlags } from './commands/generic.js';
 import { wishlistAdd, wishlistMove, wishlistRemoveItems } from './commands/wishlist.js';
 import { priceHistoryCommand } from './commands/price.js';
+import {
+  watchAddCommand,
+  watchCheckCommand,
+  watchListCommand,
+  watchRemoveCommand,
+} from './commands/watch.js';
 
 declare const __TAKEALOT_VERSION__: string | undefined;
 const packageVersion = (): string => {
@@ -66,6 +72,15 @@ const intListOpt = (name: string) => (value: string, previous: number[] = []) =>
   ...previous,
   intOpt(name)(value),
 ];
+
+const priceOpt = (name: string) => (value: string) => {
+  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) throw new UsageError(`invalid ${name}: ${value}`);
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 10_000_000) {
+    throw new UsageError(`invalid ${name}: ${value}`);
+  }
+  return amount;
+};
 
 /** Add the two global flags to a command so they parse in any position. */
 function withGlobals(cmd: Command): Command {
@@ -171,6 +186,7 @@ function errorDetails(err: unknown): {
   }
   if (err instanceof UsageError) return { error, code: err.code };
   if (err instanceof ServalError) return { error, code: err.code };
+  if (err instanceof WatchError) return { error, code: err.code };
   if (err instanceof OtpFlowError) return { error, code: err.code };
   if (isAuthFailure(err)) return { error, code: err.code };
   if (err instanceof CommanderError) return { error, code: err.code };
@@ -328,6 +344,55 @@ withGlobals(price.command('history'))
           since: options.since,
           series: Boolean(options.series),
           cache: options.cache,
+          verbose: globalFlags(command).verbose ?? false,
+          version: VERSION,
+        }),
+      ),
+  );
+
+const watch = withGlobals(program.command('watch'))
+  .description('manage a local price watchlist')
+  .allowExcessArguments(false);
+
+withGlobals(watch.command('add'))
+  .description('add or update a watched product')
+  .allowExcessArguments(false)
+  .argument('[product]', 'PLID, number, or Takealot product URL')
+  .option('--target <rand>', 'alert at or below this price', priceOpt('--target'))
+  .option('--drop <percent>', 'drop percentage from 1 to 90', idOpt('--drop'))
+  .option('--from-wishlist <groupId>', 'add all products in a wishlist', idOpt('--from-wishlist'))
+  .action(
+    (
+      product: string | undefined,
+      options: { target?: number; drop?: number; fromWishlist?: number },
+      command: Command,
+    ) => run(command, (ctx) => watchAddCommand(ctx, product, options)),
+  );
+
+withGlobals(watch.command('rm'))
+  .description('remove a watched product')
+  .allowExcessArguments(false)
+  .argument('<product>', 'PLID, number, or Takealot product URL')
+  .action((product: string, _options: unknown, command: Command) =>
+    run(command, (ctx) => watchRemoveCommand(ctx, product)),
+  );
+
+withGlobals(watch.command('list'))
+  .description('show the local watchlist')
+  .allowExcessArguments(false)
+  .action((_options: unknown, command: Command) => run(command, watchListCommand));
+
+withGlobals(watch.command('check'))
+  .description('check watched products for price drops')
+  .allowExcessArguments(false)
+  .option('--no-update', 'do not update the watchlist file')
+  .option('--max-requests <n>', 'maximum Serval HTTP attempts', idOpt('--max-requests'), 50)
+  .action(
+    (options: { update: boolean; maxRequests: number }, command: Command) =>
+      run(command, (ctx) =>
+        watchCheckCommand(ctx, {
+          update: options.update,
+          maxRequests: options.maxRequests,
           verbose: globalFlags(command).verbose ?? false,
           version: VERSION,
         }),

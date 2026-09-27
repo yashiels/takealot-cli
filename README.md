@@ -78,6 +78,7 @@ All data commands accept `--json`. Use `--help` on a command group to see all it
 |------|----------|
 | Find | `search <query> [--limit]` · `autocomplete` · `trending` · `deals` · `info <plid> [--credit-options\|--bundle\|--card\|--reviews]` |
 | Price history | `price history <product> [--since <window>] [--series] [--no-cache]` |
+| Price watch | `watch add <product> [--target <rand>] [--drop <percent>]` · `watch add --from-wishlist <groupId>` · `watch list` · `watch check` · `watch rm <product>` |
 | Reviews | `reviews <plid> [--page <n>] [--sort <key>]` · `myreviews …` |
 | Recommend | `recommend layout [--location <location>] [--plid <id>]` · `recommend <location> --model <key> [--plid <id>] [--limit 10]` · `buy-again` |
 | Cart | `cart` · `cart add <query>` · `cart add --sku <id>` · `cart add --plid <id>` · `cart set-qty` · `cart remove` · `cart basket` · `cart clear` |
@@ -98,6 +99,14 @@ All data commands accept `--json`. Use `--help` on a command group to see all it
 `takealot price history <product>` reads the price history from Serval. Serval usually records one price each day, but the history can have gaps. The last price can be stale. If Serval does not track the product, the command returns `not_tracked` with exit 4.
 
 Use `--since 90d` to select a time window. Use `--series --json` to include the points in JSON output.
+
+### Price watch
+
+`takealot watch add <product>` adds a product to a local watchlist. It makes no request. `takealot watch check` gets price data from Serval. Run it once a day.
+
+The `target` reason means that the price is at or below your target. The `drop` reason means that the price fell by the selected percentage. The `low` reason means that the price is at or below the earlier low in a history of at least 30 points.
+
+The watchlist can hold 50 products. A check can make at most 50 HTTP attempts by default. Use `--max-requests` to set a lower limit. A check stops new requests when Serval returns HTTP 429 or 403.
 
 ### Writes and account-security changes
 

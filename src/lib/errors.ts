@@ -31,3 +31,13 @@ export class ServalError extends Error {
     this.name = 'ServalError';
   }
 }
+
+export class WatchError extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+  ) {
+    super(message);
+    this.name = 'WatchError';
+  }
+}

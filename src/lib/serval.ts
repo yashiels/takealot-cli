@@ -19,6 +19,7 @@ export interface ServalFetchOptions {
   retryDelayMs?: number;
   now?: () => number;
   wait?: (milliseconds: number) => Promise<void>;
+  onAttempt?: () => void;
 }
 
 const EARLIEST_TIME = Date.UTC(2000, 0, 1);
@@ -227,6 +228,7 @@ export async function fetchServalPage(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
+      options.onAttempt?.();
       const response = await fetchImpl(url, {
         method: 'GET',
         redirect: 'manual',
