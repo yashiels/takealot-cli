@@ -87,10 +87,12 @@ takealot reviews <plid> [--page <n>] [--sort <key>]
 ```bash
 takealot recommend layout [--location home-page]
 takealot recommend <location> --model <key> [--limit 10]
+takealot recommend layout --location pdp --plid <plid>
+takealot recommend pdp --plid <plid> --model <key> [--limit 10]
 takealot buy-again
 ```
 
-Run `recommend layout` first to obtain model keys. Supported locations are `home-page`, `add-to-cart`, `landing-page`, and `domain`. Do not use `pdp`; the CLI rejects it because the API does not support it reliably.
+Run `recommend layout` first to obtain model keys. Supported locations are `home-page`, `add-to-cart`, `landing-page`, `domain`, and `pdp`. `pdp` needs `--plid` (sent as `context=PLID:<n>`); take the model key from `recommend layout --location pdp --plid <plid>`.
 
 ### Cart
 
@@ -105,7 +107,7 @@ takealot cart basket "milk; bread; eggs"
 takealot cart clear
 ```
 
-Writes are dry runs without `--confirm`. Text search uses the preference engine: exact prior purchase, prior brand in category, configured preferred brand, then title similarity.
+Writes are dry runs without `--confirm`. `cart remove` and `cart set-qty` refuse a SKU that is not in the cart (exit 4), read the cart before and after the write, and exit 1 with `unexpectedRemovals` plus restore commands if any other line disappeared or changed quantity. They never restore automatically; run the printed commands only after checking. Text search uses the preference engine: exact prior purchase, prior brand in category, configured preferred brand, then title similarity.
 
 ### Checkout, cards, and credits
 
@@ -133,9 +135,31 @@ takealot invoices creditnote-pdf <orderId> <creditnoteId>
 
 Invoice commands accept the numeric id printed by `orders`. The CLI searches order history and resolves it to `obfuscated_order_id` before calling invoice, credit-note, request, or business-detail paths.
 
+### Wishlists
+
+```bash
+takealot wishlist list
+takealot wishlist items <groupId>
+takealot wishlist add <groupId> --sku <id> [--sku <id> ...]
+takealot wishlist add <groupId> --plid <plid>
+takealot wishlist move --from <groupId> --to <groupId> --tsin <tsin> [--tsin <tsin> ...]
+takealot wishlist rm-items <groupId> --tsin <tsin> [--tsin <tsin> ...]
+```
+
+Always pass the group id to typed adds; the CLI refuses to guess. `wishlist add --file <json>` without a group writes to whichever list the account used last, so avoid it. Moves and removals are keyed by TSIN, read from `wishlist items <groupId> --json`. Ids are validated before sending (positive integers, SKU/TSIN/PLID of at least 4 digits). The legacy `wishlist add group <groupId> --file <json>` form still works.
+
+### Help
+
+```bash
+takealot help search "<query>" [--autocomplete]
+takealot help context <slug>
+```
+
 ### Full account surface
 
 The catalogue also exposes addresses and pickup points, returns and refunds, wishlists, credits and vouchers, Takealot Plus non-payment operations, account and security, personal reviews, and help/chat. Run `takealot --help` and group-level `--help` for the generated commands.
+
+Takealot Plus reads (`plus cancel form`, `plus claim-discount form`, `plus manage plan`) exit 4 with code `unavailable_state` when the account has no active subscription. That is the expected answer for a non-subscriber, not a CLI fault.
 
 Some writes use a server-provided form followed by a submit:
 
@@ -167,10 +191,17 @@ Exceptions (no per-action OK needed):
 JSON failures are written to stdout:
 
 ```json
-{ "error": "message", "code": "stable_error_code", "status": 400 }
+{
+  "error": "message",
+  "code": "stable_error_code",
+  "status": 400,
+  "method": "POST",
+  "path": "/rest/v-1-18-0/customers/<id>/cart/items",
+  "details": { "message": "...", "errors": [{ "field": "...", "message": "..." }] }
+}
 ```
 
-`status` is optional.
+`status`, `method`, `path`, and `details` appear on API errors. `details` is an allowlist of the server's message, code, and field errors with emails and long digit runs masked. `--verbose` also logs each failing request line.
 
 | Exit | Meaning                                          |
 | ---- | ------------------------------------------------ |
