@@ -50,6 +50,16 @@ These rules come from the CLI. Plan every task around them.
 
 The owner uses the same cart for other shopping. Save `takealot cart --json` before a cart write. Compare it after the write.
 
+## Price history
+
+Use Serval to read the past prices of a product:
+
+```bash
+takealot price history <plid-or-url> --since 90d --json
+```
+
+Serval usually records one price each day, but the history can have gaps. The last price can be stale. Code `not_tracked` with exit 4 means that Serval does not track the product.
+
 ## Cart changes that remove or change lines
 
 `cart remove <sku>` and `cart set-qty <sku> <n>` read the cart before and after the write.

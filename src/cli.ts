@@ -13,7 +13,7 @@ import { pathToFileURL } from 'node:url';
 import { Context, OtpFlowError, type GlobalOptions } from './lib/context.js';
 import { ApiError } from './lib/api-client.js';
 import { isAuthFailure } from './lib/auth.js';
-import { UsageError } from './lib/errors.js';
+import { ServalError, UsageError } from './lib/errors.js';
 import { redactText } from './lib/redact.js';
 import { c } from './lib/ui.js';
 import { searchCommand } from './commands/search.js';
@@ -30,6 +30,7 @@ import { loginCommand } from './commands/login.js';
 import { registerCatalogue } from './commands/register.js';
 import { mutateEndpoint, readBodyFromFlags } from './commands/generic.js';
 import { wishlistAdd, wishlistMove, wishlistRemoveItems } from './commands/wishlist.js';
+import { priceHistoryCommand } from './commands/price.js';
 
 declare const __TAKEALOT_VERSION__: string | undefined;
 const packageVersion = (): string => {
@@ -44,7 +45,7 @@ const packageVersion = (): string => {
     return '0.0.0-dev';
   }
 };
-const VERSION =
+export const VERSION =
   typeof __TAKEALOT_VERSION__ === 'string' && __TAKEALOT_VERSION__
     ? __TAKEALOT_VERSION__
     : packageVersion();
@@ -169,6 +170,7 @@ function errorDetails(err: unknown): {
     };
   }
   if (err instanceof UsageError) return { error, code: err.code };
+  if (err instanceof ServalError) return { error, code: err.code };
   if (err instanceof OtpFlowError) return { error, code: err.code };
   if (isAuthFailure(err)) return { error, code: err.code };
   if (err instanceof CommanderError) return { error, code: err.code };
@@ -302,6 +304,34 @@ withGlobals(program.command('reviews'))
   .option('--sort <key>', 'review sort key')
   .action((plid: number, options: { page: number; sort?: string }, command: Command) =>
     run(command, (ctx) => reviewsCommand(ctx, plid, options)),
+  );
+
+const price = withGlobals(program.command('price'))
+  .description('show product price history from Serval')
+  .allowExcessArguments(false);
+
+withGlobals(price.command('history'))
+  .description('show the Serval price history for a product')
+  .allowExcessArguments(false)
+  .argument('<product>', 'PLID, number, or Takealot product URL')
+  .option('--since <window>', 'history window: all, Nd, Nw, Nm, or Ny', 'all')
+  .option('--series', 'include the price series in JSON output')
+  .option('--no-cache', 'skip the Serval cache read')
+  .action(
+    (
+      product: string,
+      options: { since: string; series?: boolean; cache: boolean },
+      command: Command,
+    ) =>
+      run(command, (ctx) =>
+        priceHistoryCommand(ctx, product, {
+          since: options.since,
+          series: Boolean(options.series),
+          cache: options.cache,
+          verbose: globalFlags(command).verbose ?? false,
+          version: VERSION,
+        }),
+      ),
   );
 
 const recommend = withGlobals(program.command('recommend'))

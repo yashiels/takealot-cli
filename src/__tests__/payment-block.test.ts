@@ -122,6 +122,7 @@ describe('payment transport block', () => {
     'https://api.takealot.com:444/checkout/1',
     'https://x:y@api.takealot.com/checkout/1',
     'https://secure.takealot.com/checkout/1',
+    'https://www.servaltracker.com/products/PLID46639928/',
   ])('rejects unsafe URL %s', async (url) => {
     const { client, fetchMock } = mkClient({ body: {} });
     await expect(client.authedFetch(url)).rejects.toBeInstanceOf(UnsafeUrlError);
@@ -153,6 +154,13 @@ describe('fetch source boundary', () => {
       if (name === 'api-client.ts') {
         expect(matches).toHaveLength(1);
         expect(matches[0]!.index).toBeGreaterThan(source.indexOf('private async send'));
+      } else if (name === 'serval.ts') {
+        const servalMatches = [...source.matchAll(/\bfetchImpl\s*\(/g)];
+        expect(matches).toHaveLength(0);
+        expect(servalMatches).toHaveLength(1);
+        expect(servalMatches[0]!.index).toBeGreaterThan(
+          source.indexOf('export async function fetchServalPage'),
+        );
       } else {
         expect(matches, name).toHaveLength(0);
       }
