@@ -21,3 +21,13 @@ export class UnsafeUrlError extends UsageError {
     this.name = 'UnsafeUrlError';
   }
 }
+
+export class ServalError extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+  ) {
+    super(message);
+    this.name = 'ServalError';
+  }
+}

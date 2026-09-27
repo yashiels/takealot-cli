@@ -31,9 +31,12 @@ takealot trending
 takealot deals
 takealot info <plid> [--card] [--reviews] [--credit-options] [--bundle <ids>]
 takealot reviews <plid> [--page <n>] [--sort <key>]
+takealot price history <product> [--since <window>] [--series] [--no-cache]
 ```
 
 If the price data is missing, `info` tries again one time. If it is still missing, `price` and `skuId` are null and `unavailableReason` gives the cause. `cart add --plid` then stops with exit 1.
+
+The `price history` command reads data from Serval. Serval usually records one price each day, but the history can have gaps. The last price can be stale. Code `not_tracked` with exit 4 means that Serval does not track the product.
 
 ## Recommendations
 

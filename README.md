@@ -77,6 +77,7 @@ All data commands accept `--json`. Use `--help` on a command group to see all it
 | Area | Commands |
 |------|----------|
 | Find | `search <query> [--limit]` · `autocomplete` · `trending` · `deals` · `info <plid> [--credit-options\|--bundle\|--card\|--reviews]` |
+| Price history | `price history <product> [--since <window>] [--series] [--no-cache]` |
 | Reviews | `reviews <plid> [--page <n>] [--sort <key>]` · `myreviews …` |
 | Recommend | `recommend layout [--location <location>] [--plid <id>]` · `recommend <location> --model <key> [--plid <id>] [--limit 10]` · `buy-again` |
 | Cart | `cart` · `cart add <query>` · `cart add --sku <id>` · `cart add --plid <id>` · `cart set-qty` · `cart remove` · `cart basket` · `cart clear` |
@@ -91,6 +92,12 @@ All data commands accept `--json`. Use `--help` on a command group to see all it
 `invoices <orderId>` accepts the order number that `orders` shows. The CLI finds Takealot's internal order id before it calls the invoice endpoints.
 
 `cart remove` and `cart set-qty` read the cart before and after the write. If a different line disappears or changes quantity, the command exits 1 and prints a restore command for each line.
+
+### Price history
+
+`takealot price history <product>` reads the price history from Serval. Serval usually records one price each day, but the history can have gaps. The last price can be stale. If Serval does not track the product, the command returns `not_tracked` with exit 4.
+
+Use `--since 90d` to select a time window. Use `--series --json` to include the points in JSON output.
 
 ### Writes and account-security changes
 
