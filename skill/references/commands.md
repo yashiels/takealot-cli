@@ -32,11 +32,20 @@ takealot deals
 takealot info <plid> [--card] [--reviews] [--credit-options] [--bundle <ids>]
 takealot reviews <plid> [--page <n>] [--sort <key>]
 takealot price history <product> [--since <window>] [--series] [--no-cache]
+takealot watch add <product> [--target <rand>] [--drop <percent>]
+takealot watch add --from-wishlist <groupId> [--drop <percent>]
+takealot watch list
+takealot watch check [--no-update] [--max-requests <n>]
+takealot watch rm <product>
 ```
 
 If the price data is missing, `info` tries again one time. If it is still missing, `price` and `skuId` are null and `unavailableReason` gives the cause. `cart add --plid` then stops with exit 1.
 
 The `price history` command reads data from Serval. Serval usually records one price each day, but the history can have gaps. The last price can be stale. Code `not_tracked` with exit 4 means that Serval does not track the product.
+
+`watch add` makes no request. `watch check` gets data from Serval once a day. `target` means at or below the target. `drop` means a fall by the selected percentage. `low` means at or below the earlier low in a history of at least 30 points.
+
+The watchlist has a limit of 50 products. A check has a default cap of 50 HTTP attempts. It stops new requests after HTTP 429 or 403. These commands write only the local watchlist. They do not change the Takealot account and do not need `--confirm`.
 
 ## Recommendations
 

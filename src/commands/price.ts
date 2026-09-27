@@ -3,7 +3,12 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import type { Context } from '../lib/context.js';
 import { atomicWriteJson } from '../lib/config.js';
-import { UsageError } from '../lib/errors.js';
+import { ServalError, UsageError } from '../lib/errors.js';
+import {
+  LockLostError,
+  withDirectoryLock,
+  type DirectoryLockHandle,
+} from '../lib/directory-lock.js';
 import { parsePlidRef } from '../lib/product-ref.js';
 import {
   cleanServalPoints,
@@ -22,7 +27,7 @@ interface PriceHistoryOptions {
   version: string;
 }
 
-interface OkCacheRecord {
+export interface OkCacheRecord {
   schema: 1;
   status: 'ok';
   plid: number;
@@ -32,14 +37,38 @@ interface OkCacheRecord {
   listing: ServalPoint[];
 }
 
-interface NotTrackedCacheRecord {
+export interface NotTrackedCacheRecord {
   schema: 1;
   status: 'not_tracked';
   plid: number;
   fetchedAt: string;
 }
 
-type CacheRecord = OkCacheRecord | NotTrackedCacheRecord;
+export type ServalHistoryRecord = OkCacheRecord | NotTrackedCacheRecord;
+
+interface FailureMarker {
+  failedAt: string;
+  code: string;
+}
+
+export interface LoadServalHistoryOptions {
+  cache: boolean;
+  version: string;
+  verbose: boolean;
+  ctx: Context;
+  beforeFetch?: () => Promise<void>;
+  onAttempt?: () => void;
+  fetchImpl?: typeof fetch;
+  now?: () => number;
+  wait?: (milliseconds: number) => Promise<void>;
+  lockTimeoutMs?: number;
+  requireCache?: boolean;
+}
+
+export interface LoadedServalHistory {
+  record: ServalHistoryRecord;
+  cached: boolean;
+}
 
 interface PriceHistoryResult {
   plid: number;
@@ -96,6 +125,13 @@ export function servalCachePath(plid: number): string {
   return path.join(cacheBase(), 'serval', `PLID${plid}.json`);
 }
 
+export function servalLockPath(plid: number): string {
+  return path.join(cacheBase(), 'serval', `PLID${plid}.lock`);
+}
+
+const servalFailurePath = (plid: number): string =>
+  path.join(cacheBase(), 'serval', `PLID${plid}.failure.json`);
+
 function validIsoTime(value: unknown, now: number): value is string {
   if (typeof value !== 'string') return false;
   const time = Date.parse(value);
@@ -107,7 +143,7 @@ function samePoints(left: unknown, right: ServalPoint[]): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-function readCache(plid: number, now: number): CacheRecord | null {
+function readCache(plid: number, now: number): ServalHistoryRecord | null {
   let value: unknown;
   try {
     value = JSON.parse(fs.readFileSync(servalCachePath(plid), 'utf8'));
@@ -160,22 +196,170 @@ function readCache(plid: number, now: number): CacheRecord | null {
   };
 }
 
-function writeCache(record: CacheRecord, verbose: boolean, ctx: Context): void {
+function ensureCacheDirectory(): void {
+  const base = cacheBase();
+  const directory = path.join(base, 'serval');
+  fs.mkdirSync(base, { recursive: true, mode: 0o700 });
+  fs.chmodSync(base, 0o700);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  fs.chmodSync(directory, 0o700);
+}
+
+function writeCache(
+  record: ServalHistoryRecord,
+  verbose: boolean,
+  ctx: Context,
+  lock: DirectoryLockHandle,
+): void {
   try {
-    const base = cacheBase();
-    const directory = path.join(base, 'serval');
-    fs.mkdirSync(base, { recursive: true, mode: 0o700 });
-    fs.chmodSync(base, 0o700);
-    fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
-    fs.chmodSync(directory, 0o700);
+    ensureCacheDirectory();
+    lock.assertHeld();
     atomicWriteJson(servalCachePath(record.plid), record, 0o600);
   } catch (error) {
+    if (error instanceof LockLostError) throw error;
     if (verbose) {
       ctx.logger.warn(
         `could not write the Serval cache: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
+}
+
+function readFailure(plid: number, now: number): FailureMarker | null {
+  try {
+    const value = JSON.parse(fs.readFileSync(servalFailurePath(plid), 'utf8')) as unknown;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const marker = value as Record<string, unknown>;
+    if (typeof marker.failedAt !== 'string' || typeof marker.code !== 'string') return null;
+    const failedAt = Date.parse(marker.failedAt);
+    if (!Number.isFinite(failedAt) || failedAt > now || now - failedAt >= 10 * 60 * 1000) return null;
+    return { failedAt: marker.failedAt, code: marker.code };
+  } catch {
+    return null;
+  }
+}
+
+function writeFailure(
+  plid: number,
+  marker: FailureMarker,
+  verbose: boolean,
+  ctx: Context,
+  lock: DirectoryLockHandle,
+): void {
+  try {
+    ensureCacheDirectory();
+    lock.assertHeld();
+    atomicWriteJson(servalFailurePath(plid), marker, 0o600);
+  } catch (error) {
+    if (error instanceof LockLostError) throw error;
+    if (verbose) ctx.logger.warn(`could not write the Serval failure marker: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function clearFailure(plid: number, lock: DirectoryLockHandle): void {
+  lock.assertHeld();
+  try {
+    fs.rmSync(servalFailurePath(plid), { force: true });
+  } catch {}
+}
+
+function failureFromMarker(marker: FailureMarker): ServalError {
+  return new ServalError(`Serval request recently failed with ${marker.code}`, marker.code);
+}
+
+export async function loadServalHistory(
+  plid: number,
+  options: LoadServalHistoryOptions,
+): Promise<LoadedServalHistory> {
+  const fetchFresh = async (
+    now: number,
+    lock?: DirectoryLockHandle,
+  ): Promise<LoadedServalHistory> => {
+    await options.beforeFetch?.();
+    let fetched;
+    try {
+      fetched = await fetchServalPage(plid, {
+        version: options.version,
+        fetchImpl: options.fetchImpl,
+        now: options.now,
+        wait: options.wait,
+        onAttempt: options.onAttempt,
+      });
+    } catch (error) {
+      if (lock && error instanceof ServalError) {
+        writeFailure(
+          plid,
+          { failedAt: new Date((options.now ?? Date.now)()).toISOString(), code: error.code },
+          options.verbose,
+          options.ctx,
+          lock,
+        );
+      }
+      throw error;
+    }
+    if (fetched.status === 'not_tracked') {
+      const missing: NotTrackedCacheRecord = {
+        schema: 1,
+        status: 'not_tracked',
+        plid,
+        fetchedAt: fetched.fetchedAt,
+      };
+      if (lock) {
+        writeCache(missing, options.verbose, options.ctx, lock);
+        clearFailure(plid, lock);
+      }
+      return { record: missing, cached: false };
+    }
+    const parsed = parseServalPage(fetched.html, now);
+    if (parsed.current.length === 0) {
+      throw new UsageError(`Serval has no usable price data for PLID${plid}`, 'no_data');
+    }
+    const loaded: OkCacheRecord = {
+      schema: 1,
+      status: 'ok',
+      plid,
+      fetchedAt: fetched.fetchedAt,
+      title: parsed.title,
+      current: parsed.current,
+      listing: parsed.listing,
+    };
+    if (lock) {
+      writeCache(loaded, options.verbose, options.ctx, lock);
+      clearFailure(plid, lock);
+    }
+    return { record: loaded, cached: false };
+  };
+  try {
+    ensureCacheDirectory();
+  } catch (error) {
+    if (options.requireCache) {
+      throw new ServalError(
+        `Serval cache directory is not available: ${error instanceof Error ? error.message : String(error)}`,
+        'serval_cache_unavailable',
+      );
+    }
+    if (options.verbose) {
+      options.ctx.logger.warn(
+        `could not write the Serval cache: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+    return fetchFresh((options.now ?? Date.now)());
+  }
+  return withDirectoryLock(
+    servalLockPath(plid),
+    {
+      timeoutMs: options.lockTimeoutMs ?? 20_000,
+      error: () => new ServalError(`Serval cache is busy for PLID${plid}`, 'serval_busy'),
+    },
+    async (lock) => {
+      const now = (options.now ?? Date.now)();
+      const record = options.cache ? readCache(plid, now) : null;
+      if (record) return { record, cached: true };
+      const failure = options.cache ? readFailure(plid, now) : null;
+      if (failure) throw failureFromMarker(failure);
+      return fetchFresh(now, lock);
+    },
+  );
 }
 
 function notTracked(plid: number): UsageError {
@@ -309,40 +493,9 @@ export async function priceHistoryCommand(
   const plid = parsePlidRef(product);
   const days = parsePriceWindow(options.since);
   const now = Date.now();
-  let record = options.cache ? readCache(plid, now) : null;
-  let cached = record !== null;
+  const loaded = await loadServalHistory(plid, { ...options, ctx });
+  const { record, cached } = loaded;
   if (record?.status === 'not_tracked') throw notTracked(plid);
-
-  if (!record) {
-    const fetched = await fetchServalPage(plid, { version: options.version });
-    if (fetched.status === 'not_tracked') {
-      const missing: NotTrackedCacheRecord = {
-        schema: 1,
-        status: 'not_tracked',
-        plid,
-        fetchedAt: fetched.fetchedAt,
-      };
-      writeCache(missing, options.verbose, ctx);
-      throw notTracked(plid);
-    }
-    const parsed = parseServalPage(fetched.html, now);
-    if (parsed.current.length === 0) {
-      throw new UsageError(`Serval has no usable price data for PLID${plid}`, 'no_data');
-    }
-    record = {
-      schema: 1,
-      status: 'ok',
-      plid,
-      fetchedAt: fetched.fetchedAt,
-      title: parsed.title,
-      current: parsed.current,
-      listing: parsed.listing,
-    };
-    writeCache(record, options.verbose, ctx);
-    cached = false;
-  }
-
-  if (record.status !== 'ok') throw notTracked(plid);
   const result = buildPriceHistory(record, options.since, options.series, cached, now);
   const selected = windowPoints(record.current, days);
   ctx.logger.result(() => renderHuman(result, selected), result);

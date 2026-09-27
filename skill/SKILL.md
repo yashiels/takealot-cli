@@ -60,6 +60,21 @@ takealot price history <plid-or-url> --since 90d --json
 
 Serval usually records one price each day, but the history can have gaps. The last price can be stale. Code `not_tracked` with exit 4 means that Serval does not track the product.
 
+## Price watch
+
+Add a product. Then inspect the local watchlist once a day:
+
+```bash
+takealot watch add <plid-or-url> --target 500 --drop 5 --json
+takealot watch check --json
+```
+
+`watch add` makes no request. `watch check` gets data from Serval. A `target` alert is at or below the target. A `drop` alert meets the selected percentage. A `low` alert is at or below the earlier low in a history of at least 30 points.
+
+The watchlist has a limit of 50 products. The request cap is 50 HTTP attempts by default. The run stops new requests after HTTP 429 or 403.
+
+`watch` writes only the local watchlist file. It never changes the Takealot account. It does not need `--confirm`.
+
 ## Cart changes that remove or change lines
 
 `cart remove <sku>` and `cart set-qty <sku> <n>` read the cart before and after the write.
